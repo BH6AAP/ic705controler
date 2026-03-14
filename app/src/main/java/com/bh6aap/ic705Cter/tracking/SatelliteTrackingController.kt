@@ -729,10 +729,10 @@ class SatelliteTrackingController(
      */
     private fun startVfoAvoidanceDetection() {
         // 监听VFO A频率变化（用于避让逻辑和PTT状态检测）
-        // 注意：需要在跟踪状态下始终监听，以便检测PTT状态变化和跳频
+        // LINEAR模式和自定义模式需要避让，FM模式不需要避让
         controllerScope.launch {
             bluetoothConnectionManager.vfoAFrequency.collect { freqStr ->
-                if (_isTracking.value && _satelliteType.value == SatelliteType.LINEAR) {
+                if (_isTracking.value && _satelliteType.value != SatelliteType.FM) {
                     val currentFrequency = parseFrequencyString(freqStr)
                     if (currentFrequency > 0) {
                         // 使用新的避让控制器处理频率广播
@@ -745,7 +745,7 @@ class SatelliteTrackingController(
         // 监听VFO B频率变化（仅用于显示和记录，不计入避让逻辑）
         controllerScope.launch {
             bluetoothConnectionManager.vfoBFrequency.collect { freqStr ->
-                if (_isTracking.value && _satelliteType.value == SatelliteType.LINEAR) {
+                if (_isTracking.value && _satelliteType.value != SatelliteType.FM) {
                     val currentFrequency = parseFrequencyString(freqStr)
                     if (currentFrequency > 0) {
                         // VFO B仅用于显示，不触发避让
