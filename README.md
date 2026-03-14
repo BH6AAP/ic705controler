@@ -262,6 +262,10 @@ private const val TRANSMITTER_VALIDITY_DAYS = 30L
 - 提交 [GitHub Issue](https://github.com/yourusername/ic705controler/issues)
 - 发送邮件至: [1065147896@qq.com](mailto:your.email@example.com)
 
-***
+  <br />
+
+# 捐助
+
+支付宝：18132886815
 
 **注意**: 本项目为业余无线电爱好者开发，使用时请遵守当地无线电法规。
