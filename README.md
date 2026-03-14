@@ -5,23 +5,27 @@
 ## 功能特性
 
 ### 核心功能
+
 - **卫星跟踪**: 实时跟踪业余卫星位置，预测过境时间
 - **自动多普勒补偿**: 自动计算并调整上下行频率，补偿多普勒频移
 - **VFO 避让**: 智能检测用户手动操作波轮，自动暂停/恢复频率控制
 - **PTT 检测**: 检测电台发射状态，发射期间暂停频率调整
 
 ### 数据管理
+
 - **TLE 数据源**: 支持 Celestrak 和 SatNOGS 双数据源
 - **自定义 API**: 支持用户配置自定义卫星数据 API
 - **离线数据**: 内置卫星和转发器数据，首次启动即可使用
 - **数据时效**: 自动检查数据新鲜度，TLE 数据 12 小时、转发器数据 30 天
 
 ### 电台控制
+
 - **CI-V 协议**: 通过蓝牙连接 IC-705 电台
 - **频率设置**: 自动设置 VFO A/B 频率和模式
 - **PTT 控制**: 支持 PTT 状态检测和频率跳变识别
 
 ### 用户界面
+
 - **实时显示**: 卫星方位、仰角、距离、速度实时更新
 - **过境预测**: 显示未来 24 小时内的卫星过境时间
 - **收藏管理**: 支持收藏常用卫星，快速切换
@@ -39,14 +43,15 @@
 ### 从源码构建
 
 1. 克隆仓库
+
 ```bash
-git clone https://github.com/yourusername/ic705controler.git
+git clone https://github.com/bh6aap/ic705controler.git
 cd ic705controler
 ```
 
-2. 使用 Android Studio 打开项目
+1. 使用 Android Studio 打开项目
+2. 构建 APK
 
-3. 构建 APK
 ```bash
 ./gradlew assembleDebug
 ```
@@ -54,6 +59,7 @@ cd ic705controler
 ### 安装 APK
 
 将生成的 APK 文件安装到 Android 设备：
+
 ```bash
 adb install app/build/outputs/apk/debug/app-debug.apk
 ```
@@ -85,6 +91,7 @@ adb install app/build/outputs/apk/debug/app-debug.apk
 ### VFO 避让
 
 当用户手动转动波轮调整频率时：
+
 1. 应用检测到频率变化（>4Hz）
 2. 自动暂停自动跟踪
 3. 用户停止操作 150ms 后恢复跟踪
@@ -144,13 +151,15 @@ ic705controler/
 ## 数据源
 
 ### 默认数据源
-- **TLE 数据**: [Celestrak](https://celestrak.org/NORAD/elements/gp.php?GROUP=amateur&FORMAT=tle)
+
+- **TLE 数据**: [Celestrak](https://celestrak.org/NORAD/elements/gp.php?GROUP=amateur\&FORMAT=tle)
 - **卫星信息**: [SatNOGS Database](https://db.satnogs.org/)
 - **转发器数据**: [SatNOGS Database](https://db.satnogs.org/)
 
 ### 支持的数据格式
 
 **TLE 数据** (Celestrak 格式):
+
 ```
 OSCAR 7 (AO-7)
 1 07530U 74089B   25071.26979351 -.00000028  00000+0  11357-3 0  9991
@@ -158,6 +167,7 @@ OSCAR 7 (AO-7)
 ```
 
 **卫星数据** (JSON):
+
 ```json
 {
   "norad_cat_id": "7530",
@@ -168,6 +178,7 @@ OSCAR 7 (AO-7)
 ```
 
 **转发器数据** (JSON):
+
 ```json
 {
   "uuid": "ao-7-linear",
@@ -249,8 +260,8 @@ private const val TRANSMITTER_VALIDITY_DAYS = 30L
 如有问题或建议，请通过以下方式联系：
 
 - 提交 [GitHub Issue](https://github.com/yourusername/ic705controler/issues)
-- 发送邮件至: your.email@example.com
+- 发送邮件至: [1065147896@qq.com](mailto:your.email@example.com)
 
----
+***
 
 **注意**: 本项目为业余无线电爱好者开发，使用时请遵守当地无线电法规。
