@@ -27,8 +27,8 @@ import kotlinx.coroutines.withContext
 import androidx.compose.ui.res.stringResource
 
 /**
- * 地面站列表对话框
- * 显示已保存的地面站列表，支持快速切换和删除
+ * Ground station list dialog
+ * Displays saved ground station list, supports quick switching and deletion
  */
 @Composable
 fun StationListDialog(
@@ -40,14 +40,14 @@ fun StationListDialog(
     val scope = rememberCoroutineScope()
     val dbHelper = remember { DatabaseHelper.getInstance(context) }
 
-    // 地面站列表
+    // Ground station list
     var stations by remember { mutableStateOf<List<StationEntity>>(emptyList()) }
-    // 加载状态
+    // Loading state
     var isLoading by remember { mutableStateOf(true) }
-    // 删除确认对话框
+    // Delete confirmation dialog
     var stationToDelete by remember { mutableStateOf<StationEntity?>(null) }
 
-    // 加载地面站列表
+    // Load ground station list
     LaunchedEffect(Unit) {
         scope.launch(Dispatchers.IO) {
             try {
@@ -82,7 +82,7 @@ fun StationListDialog(
                     .fillMaxWidth()
                     .padding(16.dp)
             ) {
-                // 标题栏
+                // Title bar
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -101,7 +101,7 @@ fun StationListDialog(
 
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
-                // 地面站列表
+                // Ground station list
                 if (isLoading) {
                     Box(
                         modifier = Modifier
@@ -137,7 +137,7 @@ fun StationListDialog(
                                 isSelected = station.id == currentStationId,
                                 onClick = {
                                     scope.launch(Dispatchers.IO) {
-                                        // 设置为默认地面站
+                                        // Set as default ground station
                                         dbHelper.setStationAsDefault(station.id)
                                         LogManager.i("StationListDialog", "切换到地面站: ${station.name} (ID: ${station.id})")
                                         withContext(Dispatchers.Main) {
@@ -157,7 +157,7 @@ fun StationListDialog(
         }
     }
 
-    // 删除确认对话框
+    // Delete confirmation dialog
     if (stationToDelete != null) {
         AlertDialog(
             onDismissRequest = { stationToDelete = null },
@@ -172,9 +172,9 @@ fun StationListDialog(
                             try {
                                 dbHelper.deleteStation(station)
                                 LogManager.i("StationListDialog", "删除地面站: ${station.name} (ID: ${station.id})")
-                                // 如果删除的是当前默认地面站，需要重新加载列表
+                                // If deleted station was default, list will auto-update via Flow
                                 withContext(Dispatchers.Main) {
-                                    // 列表会自动更新，因为使用了 Flow
+                                    // List auto-updates because Flow is used
                                 }
                             } catch (e: Exception) {
                                 LogManager.e("StationListDialog", "删除地面站失败", e)
@@ -195,7 +195,7 @@ fun StationListDialog(
 }
 
 /**
- * 地面站列表项
+ * Ground station list item
  */
 @Composable
 private fun StationListItem(
@@ -223,13 +223,13 @@ private fun StationListItem(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // 左侧：图标和名称信息
+            // Left: icon and name info
             Row(
                 modifier = Modifier.weight(1f),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // 位置图标或选中标记
+                // Location icon or selected marker
                 if (isSelected) {
                     Icon(
                         imageVector = Icons.Default.Check,
@@ -246,7 +246,7 @@ private fun StationListItem(
                     )
                 }
 
-                // 地面站信息
+                // Ground station info
                 Column {
                     Text(
                         text = station.name,
@@ -282,7 +282,7 @@ private fun StationListItem(
                 }
             }
 
-            // 右侧：删除按钮
+            // Right: delete button
             IconButton(onClick = onDeleteClick) {
                 Icon(
                     imageVector = Icons.Default.Delete,
