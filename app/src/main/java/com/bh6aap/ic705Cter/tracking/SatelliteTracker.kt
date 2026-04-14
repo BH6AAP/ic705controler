@@ -18,6 +18,7 @@ import org.orekit.time.TimeScalesFactory
 import org.orekit.utils.Constants
 import org.orekit.utils.IERSConventions
 import java.util.Date
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * 卫星跟踪器
@@ -39,10 +40,16 @@ class SatelliteTracker private constructor(private val context: Context) {
         }
 
         // 缓存的地球模型（全局共享）
+        // @Volatile ensures that writes performed on one Dispatchers.IO thread are
+        // visible to other IO threads that may subsequently read the cached values;
+        // without this the JVM memory model offers no visibility guarantee.
+        @Volatile
         private var cachedEarth: OneAxisEllipsoid? = null
         // 缓存的地面站框架
+        @Volatile
         private var cachedTopocentricFrame: TopocentricFrame? = null
         // 缓存的地面站位置
+        @Volatile
         private var cachedStationLocation: Triple<Double, Double, Double>? = null
     }
 
@@ -51,7 +58,14 @@ class SatelliteTracker private constructor(private val context: Context) {
     private var utc = TimeScalesFactory.getUTC()
 
     // 缓存的卫星传播器
-    private val propagatorCache = mutableMapOf<String, TLEPropagator>()
+    // ConcurrentHashMap is used instead of mutableMapOf() (which returns a plain
+    // LinkedHashMap) because calculateMultiplePositions() and
+    // calculateSatelliteTrajectory() may execute concurrently on different
+    // Dispatchers.IO threads.  Concurrent structural modification of a plain
+    // HashMap can cause an infinite loop in the resize path (JDK < 8) or a
+    // ConcurrentModificationException, both of which would silently stop Doppler
+    // updates and freeze the radar display.
+    private val propagatorCache = ConcurrentHashMap<String, TLEPropagator>()
 
     data class SatellitePosition(
         val satelliteId: String,

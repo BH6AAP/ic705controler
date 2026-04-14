@@ -1,6 +1,7 @@
 package com.bh6aap.ic705Cter.util
 
 import android.util.Log
+import com.bh6aap.ic705Cter.BuildConfig
 
 /**
  * 日志管理类
@@ -10,8 +11,12 @@ object LogManager {
 
     private const val DEFAULT_TAG = "IC705"
 
-    // 日志级别控制
-    var isDebugEnabled = true
+    // In release builds (BuildConfig.DEBUG == false) verbose debug output is
+    // suppressed to avoid leaking radio frequencies, GPS coordinates and raw
+    // CI-V byte streams to logcat, which is readable by apps holding the
+    // READ_LOGS permission or via ADB on unrooted devices.  Info/warning/error
+    // levels remain active because they are needed for diagnosing field issues.
+    var isDebugEnabled = BuildConfig.DEBUG
     var isInfoEnabled = true
     var isWarningEnabled = true
     var isErrorEnabled = true

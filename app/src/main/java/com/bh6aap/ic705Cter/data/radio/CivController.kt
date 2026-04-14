@@ -72,7 +72,11 @@ class CivController(private val sppConnector: BluetoothSppConnector) {
     val vfoBMode: StateFlow<String> = _vfoBMode.asStateFlow()
 
     // 等待响应机制
+    // @Volatile ensures that writes from the coroutine are visible to the Bluetooth
+    // receive thread (a raw Java Thread) that calls processResponse(), and vice versa.
+    @Volatile
     private var pendingResponse: CompletableDeferred<ByteArray>? = null
+    @Volatile
     private var pendingCommandCode: Byte? = null
 
     // 响应监听器（用于外部处理CIV响应，如PTT状态管理器）
@@ -157,10 +161,14 @@ class CivController(private val sppConnector: BluetoothSppConnector) {
         commandCode: Byte,
         data: ByteArray = ByteArray(0)
     ): ByteArray? {
-        // 清除之前可能存在的未完成等待
-        if (pendingResponse != null && !pendingResponse!!.isCompleted) {
-            LogManager.w(TAG, "【CIV】清除之前未完成的等待")
-            pendingResponse?.cancel()
+        // Cancel any prior in-flight wait; capture the reference locally before
+        // calling cancel() to avoid a TOCTOU null-dereference between the read
+        // of pendingResponse and the cancel() call.
+        pendingResponse?.let { prev ->
+            if (!prev.isCompleted) {
+                LogManager.w(TAG, "【CIV】清除之前未完成的等待")
+                prev.cancel()
+            }
         }
 
         // 创建等待响应的Deferred
@@ -259,6 +267,15 @@ class CivController(private val sppConnector: BluetoothSppConnector) {
      */
     suspend fun setVfoFrequency(vfo: Byte, frequencyHz: Long): Boolean {
         val vfoName = if (vfo == VFO_A) "VFO A" else "VFO B"
+        // Reject obviously out-of-range values that may originate from a NaN/Infinity
+        // Doppler calculation converting to Long (yields Long.MAX_VALUE) or from a
+        // malformed BCD response.  IC-705 covers 30 kHz to 199.999999 MHz on most
+        // bands; the absolute hardware limit is below 2 GHz.  Reject anything above
+        // 10 GHz as physically impossible.
+        if (frequencyHz <= 0L || frequencyHz > 10_000_000_000L) {
+            LogManager.e(TAG, "【CIV】频率超出有效范围 ($frequencyHz Hz)，拒绝发送到电台")
+            return false
+        }
         LogManager.i(TAG, "【CIV】设置 $vfoName 频率: ${frequencyHz / 1000000.0} MHz")
 
         val freqBcd = frequencyToBcd(frequencyHz)
@@ -640,15 +657,16 @@ class CivController(private val sppConnector: BluetoothSppConnector) {
             return
         }
 
-        // 检查是否是等待的响应
-        if (pendingResponse != null && !pendingResponse!!.isCompleted) {
-            val expectedCommand = pendingCommandCode
-            if (expectedCommand != null) {
-                // 成功响应 (0xFB) 或数据响应
-                if (commandCode == 0xFB.toByte() || commandCode == expectedCommand) {
-                    pendingResponse!!.complete(response)
-                    return
-                }
+        // Capture both volatile fields into local variables so we do a single
+        // consistent read of each; avoids the TOCTOU window between the null
+        // check and the .complete() call when the receive thread and a coroutine
+        // access these fields concurrently.
+        val pending = pendingResponse
+        val expected = pendingCommandCode
+        if (pending != null && !pending.isCompleted && expected != null) {
+            if (commandCode == 0xFB.toByte() || commandCode == expected) {
+                pending.complete(response)
+                return
             }
         }
 
@@ -670,6 +688,10 @@ class CivController(private val sppConnector: BluetoothSppConnector) {
         if (response.size >= 11) {
             val freqData = response.copyOfRange(5, 10)
             val freqHz = bcdToFrequency(freqData.reversedArray())
+            if (freqHz < 0L) {
+                LogManager.w(TAG, "【CIV解码】VFO A频率BCD数据无效，忽略")
+                return
+            }
             val freqStr = String.format("%.6f", freqHz / 1000000.0)
             _vfoAFrequency.value = freqStr
             LogManager.i(TAG, "【CIV解码】VFO A频率更新: ${freqStr}MHz")
@@ -689,6 +711,10 @@ class CivController(private val sppConnector: BluetoothSppConnector) {
         if (response.size >= 11) {
             val freqData = response.copyOfRange(5, 10)
             val freqHz = bcdToFrequency(freqData.reversedArray())
+            if (freqHz < 0L) {
+                LogManager.w(TAG, "【CIV解码】VFO B频率BCD数据无效，忽略")
+                return
+            }
             val freqStr = String.format("%.6f", freqHz / 1000000.0)
             _vfoBFrequency.value = freqStr
             LogManager.i(TAG, "【CIV解码】VFO B频率更新: ${freqStr}MHz")
@@ -725,11 +751,26 @@ class CivController(private val sppConnector: BluetoothSppConnector) {
      * 将BCD格式转换为频率
      * 参考 Look4Sat: bcdToFrequency
      */
+    /**
+     * Decode a 5-byte little-endian BCD frequency value.
+     * Returns -1L when any nibble is outside 0-9, which signals the caller to
+     * discard the frame rather than propagate a garbage frequency value into the
+     * UI or back to the radio.
+     *
+     * Trigger scenario: a rogue Bluetooth device (or bit-corrupted SPP stream)
+     * sends 0xFF bytes in the frequency field; without this check the result
+     * would be 9_999_999_999 Hz (≈ 10 GHz) which setVfoFrequency() would then
+     * attempt to encode back into BCD and transmit to the IC-705.
+     */
     private fun bcdToFrequency(bcd: ByteArray): Long {
         var frequency = 0L
         for (byte in bcd) {
             val high = (byte.toInt() shr 4) and 0x0F
             val low = byte.toInt() and 0x0F
+            if (high > 9 || low > 9) {
+                LogManager.w(TAG, "【CIV】BCD解析错误: 无效数字 high=$high low=$low (0x${String.format("%02X", byte)})")
+                return -1L
+            }
             frequency = frequency * 100 + high * 10 + low
         }
         return frequency

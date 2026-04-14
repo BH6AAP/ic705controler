@@ -232,12 +232,28 @@ class BluetoothSppConnector(private val bluetoothDevice: BluetoothDevice) {
                                     lastDataReceivedTime = System.currentTimeMillis()
                                     LogManager.d(TAG, "【蓝牙SPP】读取到 $bytesRead 字节数据")
                                     
-                                    // 处理接收到的数据
-                                    processReceivedData(buffer, bufferSize)
-                                    
-                                    // 清空已处理的数据
-                                    if (bufferSize > 0) {
-                                        System.arraycopy(buffer, bufferSize, buffer, 0, buffer.size - bufferSize)
+                                    // Process complete CIV frames and learn how many bytes
+                                    // were consumed.  Partial frames (no 0xFD terminator
+                                    // seen yet) are retained at the front of the buffer so
+                                    // they can be completed on the next read, which fixes
+                                    // silent loss of commands that span two read() calls.
+                                    val consumed = processReceivedData(buffer, bufferSize)
+                                    if (consumed < bufferSize) {
+                                        // Slide unconsumed bytes to the front of the buffer.
+                                        System.arraycopy(buffer, consumed, buffer, 0, bufferSize - consumed)
+                                        bufferSize -= consumed
+                                    } else {
+                                        bufferSize = 0
+                                    }
+
+                                    // Safety reset: if the buffer is full and we still
+                                    // could not extract a complete frame the incoming data
+                                    // is either corrupt or a rogue device is flooding us
+                                    // with bytes that never contain 0xFD.  Discard
+                                    // everything to unblock the receive loop and prevent
+                                    // 100 % CPU spin (read(buf,256,0) always returns 0).
+                                    if (bufferSize >= buffer.size) {
+                                        LogManager.w(TAG, "【蓝牙SPP】接收缓冲区满且无完整CIV帧，丢弃所有数据")
                                         bufferSize = 0
                                     }
                                 } else if (bytesRead == -1) {
@@ -323,8 +339,9 @@ class BluetoothSppConnector(private val bluetoothDevice: BluetoothDevice) {
      * 处理接收到的数据
      * @param data 数据缓冲区
      * @param length 数据长度
+     * @return number of bytes consumed (complete frames extracted)
      */
-    private fun processReceivedData(data: ByteArray, length: Int) {
+    private fun processReceivedData(data: ByteArray, length: Int): Int {
         val receivedData = ByteArray(length)
         System.arraycopy(data, 0, receivedData, 0, length)
         
@@ -334,15 +351,17 @@ class BluetoothSppConnector(private val bluetoothDevice: BluetoothDevice) {
         // 调用数据接收回调
         callback?.onDataReceived(receivedData)
         
-        // 分割并处理多个连续的CIV指令
-        processMultipleCivCommands(receivedData)
+        // 分割并处理多个连续的CIV指令，返回消费字节数
+        return processMultipleCivCommands(receivedData)
     }
     
     /**
      * 处理多个连续的CIV指令
      * @param data 数据缓冲区
+     * @return number of bytes consumed; bytes from this index onward are a
+     *         partial (incomplete) frame that must be retained for the next read
      */
-    private fun processMultipleCivCommands(data: ByteArray) {
+    private fun processMultipleCivCommands(data: ByteArray): Int {
         var index = 0
         while (index < data.size) {
             // 寻找CIV指令的起始字节
@@ -367,7 +386,9 @@ class BluetoothSppConnector(private val bluetoothDevice: BluetoothDevice) {
                     // 移动到下一个指令的起始位置
                     index = endIndex + 1
                 } else {
-                    // 没有找到结束字节，跳出循环
+                    // No terminator found yet — this is a partial frame.  Stop
+                    // here; the caller will retain bytes from 'index' onward
+                    // so they are prepended to the next read.
                     break
                 }
             } else {
@@ -375,6 +396,7 @@ class BluetoothSppConnector(private val bluetoothDevice: BluetoothDevice) {
                 index++
             }
         }
+        return index
     }
     
     /**

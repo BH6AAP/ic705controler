@@ -252,6 +252,39 @@ class TleDataManager(private val context: Context) {
     }
 
     /**
+     * Validate a single TLE line using the standard modulo-10 checksum.
+     * Each digit contributes its face value; each '-' contributes 1; all other
+     * characters contribute 0.  The last character of a valid 69-character line
+     * is the decimal checksum digit.
+     *
+     * An invalid checksum indicates either a truncated download, bit corruption,
+     * or a tampered response.  Accepting such data would cause TLEPropagator to
+     * throw an unchecked exception during propagation, crashing the tracking loop.
+     */
+    private fun validateTleChecksum(line: String): Boolean {
+        if (line.length < 69) return false
+        var sum = 0
+        for (i in 0 until 68) {
+            val c = line[i]
+            when {
+                c.isDigit() -> sum += c.digitToInt()
+                c == '-'    -> sum++
+            }
+        }
+        val expected = sum % 10
+        val actual   = line[68].digitToIntOrNull() ?: return false
+        return expected == actual
+    }
+
+    /**
+     * Return true when the string contains only ASCII digits (no leading spaces
+     * or signs).  NORAD IDs are purely numeric; a non-numeric value signals a
+     * malformed or injected TLE record.
+     */
+    private fun isNumericNoradId(id: String): Boolean =
+        id.isNotEmpty() && id.all { it.isDigit() }
+
+    /**
      * 解析纯文本格式的 TLE 数据 (Celestrak格式)
      * 格式: 三行一组
      *   第0行: 卫星名称
@@ -290,14 +323,39 @@ class TleDataManager(private val context: Context) {
 
                     // 验证TLE数据完整性
                     if (tleLine1.isNotEmpty() && tleLine2.isNotEmpty()) {
-                        // 从TLE Line 1提取NORAD ID (第3-7位)
+                        // 从 TLE Line 1 提取 NORAD ID (第3-7位)
                         val noradId = tleLine1.substring(2, 7).trim()
 
-                        // 从TLE Line 1提取国际标识符 (第9-17位)
+                        // Reject non-numeric NORAD IDs to prevent SQL injection
+                        // or lookup collisions caused by a crafted TLE response.
+                        if (!isNumericNoradId(noradId)) {
+                            android.util.Log.w("TleDataManager", "NORAD ID 包含非数字字符，跳过: '$noradId'")
+                            i++
+                            continue
+                        }
+
+                        // Validate TLE checksums.  A mismatch means the data was
+                        // corrupted in transit or deliberately tampered with;
+                        // discard the entry rather than feeding bad orbital data
+                        // into the Orekit propagator which would throw an unchecked
+                        // exception and crash the tracking coroutine.
+                        if (!validateTleChecksum(tleLine1) || !validateTleChecksum(tleLine2)) {
+                            android.util.Log.w("TleDataManager", "卫星 $name (NORAD: $noradId) TLE校验和错误，跳过")
+                            i++
+                            continue
+                        }
+
+                        // 从 TLE Line 1 提取国际标识符 (第9-17位)
                         val intlDesignator = tleLine1.substring(9, 17).trim()
 
+                        // Limit name length to guard against OOM when the
+                        // database cursor materialises very long strings into UI
+                        // widgets.  TLE name fields are at most 24 characters
+                        // per NORAD convention; 100 is a generous upper bound.
+                        val safeName = name.take(100)
+
                         val satellite = SatelliteEntity(
-                            name = name,
+                            name = safeName,
                             noradId = noradId,
                             internationalDesignator = intlDesignator.takeIf { it.isNotEmpty() },
                             tleLine1 = tleLine1,
@@ -308,7 +366,7 @@ class TleDataManager(private val context: Context) {
                         )
 
                         satellites.add(satellite)
-                        android.util.Log.d("TleDataManager", "解析卫星: $name (NORAD: $noradId)")
+                        android.util.Log.d("TleDataManager", "解析卫星: $safeName (NORAD: $noradId)")
                     }
                 }
 

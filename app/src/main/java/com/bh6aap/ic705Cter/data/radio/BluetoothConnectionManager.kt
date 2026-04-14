@@ -19,13 +19,17 @@ class BluetoothConnectionManager private constructor() {
 
     companion object {
         private const val TAG = "BluetoothConnectionManager"
+
+        // Volatile ensures the JVM memory model guarantees visibility of the write
+        // across all threads; double-checked locking removes the lock overhead on
+        // the hot path after initialisation.
+        @Volatile
         private var instance: BluetoothConnectionManager? = null
 
         fun getInstance(): BluetoothConnectionManager {
-            if (instance == null) {
-                instance = BluetoothConnectionManager()
+            return instance ?: synchronized(this) {
+                instance ?: BluetoothConnectionManager().also { instance = it }
             }
-            return instance!!
         }
     }
 

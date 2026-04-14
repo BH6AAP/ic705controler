@@ -1,5 +1,7 @@
 package com.bh6aap.ic705Cter.tracking
 
+import com.bh6aap.ic705Cter.util.LogManager
+
 /**
  * 统一的多普勒计算器
  * 基于径向速度计算多普勒频移和频率补偿
@@ -24,11 +26,18 @@ object DopplerCalculator {
      * 计算地面接收频率（下行）
      * @param satelliteFreqHz 卫星发射频率（Hz）
      * @param rangeRateMps 径向速度（m/s），正值表示远离，负值表示靠近
-     * @return 地面接收频率（Hz）
+     * @return 地面接收频率（Hz），输入包含 NaN/Infinity 时返回 0.0
      */
     fun calculateGroundDownlink(satelliteFreqHz: Double, rangeRateMps: Double): Double {
-        // 卫星靠近时(rangeRate<0)：接收频率升高
-        // 卫星远离时(rangeRate>0)：接收频率降低
+        // Guard against NaN or Infinity that may originate from an invalid TLE
+        // propagation result or a corrupted Doppler cache entry; propagating either
+        // into the frequency command sent to the IC-705 causes undefined radio
+        // behaviour (observed: radio ignores the command but firmware may freeze).
+        if (satelliteFreqHz.isNaN() || satelliteFreqHz.isInfinite() ||
+            rangeRateMps.isNaN() || rangeRateMps.isInfinite()) {
+            LogManager.w(TAG, "【Doppler下行】输入包含 NaN/Infinity: sat=$satelliteFreqHz rr=$rangeRateMps，返回 0")
+            return 0.0
+        }
         return satelliteFreqHz * (SPEED_OF_LIGHT - rangeRateMps) / SPEED_OF_LIGHT
     }
 
@@ -36,11 +45,14 @@ object DopplerCalculator {
      * 计算地面发射频率（上行）
      * @param satelliteFreqHz 卫星接收频率（Hz）
      * @param rangeRateMps 径向速度（m/s），正值表示远离，负值表示靠近
-     * @return 地面发射频率（Hz）
+     * @return 地面发射频率（Hz），输入包含 NaN/Infinity 时返回 0.0
      */
     fun calculateGroundUplink(satelliteFreqHz: Double, rangeRateMps: Double): Double {
-        // 卫星靠近时(rangeRate<0)：发射频率降低
-        // 卫星远离时(rangeRate>0)：发射频率升高
+        if (satelliteFreqHz.isNaN() || satelliteFreqHz.isInfinite() ||
+            rangeRateMps.isNaN() || rangeRateMps.isInfinite()) {
+            LogManager.w(TAG, "【Doppler上行】输入包含 NaN/Infinity: sat=$satelliteFreqHz rr=$rangeRateMps，返回 0")
+            return 0.0
+        }
         return satelliteFreqHz * (SPEED_OF_LIGHT + rangeRateMps) / SPEED_OF_LIGHT
     }
 
@@ -48,12 +60,23 @@ object DopplerCalculator {
      * 从地面接收频率反推卫星发射频率（下行）
      * @param groundFreqHz 地面接收频率（Hz）
      * @param rangeRateMps 径向速度（m/s）
-     * @return 卫星发射频率（Hz）
+     * @return 卧星发射频率（Hz），除数为零或输入无效时返回 0.0
      */
     fun calculateSatelliteDownlink(groundFreqHz: Double, rangeRateMps: Double): Double {
-        // f_sat = f_ground * c / (c - v_r)
-        // 与calculateGroundDownlink互为逆运算
-        return groundFreqHz * SPEED_OF_LIGHT / (SPEED_OF_LIGHT - rangeRateMps)
+        if (groundFreqHz.isNaN() || groundFreqHz.isInfinite() ||
+            rangeRateMps.isNaN() || rangeRateMps.isInfinite()) {
+            LogManager.w(TAG, "【Doppler反推】输入包含 NaN/Infinity: ground=$groundFreqHz rr=$rangeRateMps，返回 0")
+            return 0.0
+        }
+        val denominator = SPEED_OF_LIGHT - rangeRateMps
+        // denominator == 0 requires rangeRateMps == speed of light, physically
+        // impossible for any satellite; guard anyway to prevent Infinity from
+        // leaking into frequency commands.
+        if (denominator == 0.0) {
+            LogManager.e(TAG, "【Doppler反推】除数为零（rangeRate=c），返回 0")
+            return 0.0
+        }
+        return groundFreqHz * SPEED_OF_LIGHT / denominator
     }
 
     /**
