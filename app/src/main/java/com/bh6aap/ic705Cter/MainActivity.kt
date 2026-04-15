@@ -773,7 +773,8 @@ class MainActivity : BaseActivity() {
                 }
 
                 val locationData = LocationData.fromLocation(selectedLocation)
-                LogManager.i(LogManager.TAG_GPS, "【主界面】位置获取成功: 纬度=${locationData.latitude}, 经度=${locationData.longitude}, 提供者=${locationData.provider}")
+                LogManager.d(LogManager.TAG_GPS, "【主界面】位置获取成功: 纬度=${locationData.latitude}, 经度=${locationData.longitude}, 提供者=${locationData.provider}")
+                LogManager.i(LogManager.TAG_GPS, "【主界面】位置获取成功: 提供者=${locationData.provider}")
                 locationData
             }
         } catch (e: Exception) {
@@ -801,7 +802,8 @@ class MainActivity : BaseActivity() {
             LogManager.d(LogManager.TAG_GPS, "【主界面】已清除之前的默认地面站")
 
             val stationId = dbHelper.insertStation(station)
-            LogManager.i(LogManager.TAG_GPS, "【主界面】地面站已保存，ID: $stationId, 位置: ${locationData.latitude}, ${locationData.longitude}")
+            LogManager.d(LogManager.TAG_GPS, "【主界面】地面站已保存，ID: $stationId, 位置: ${locationData.latitude}, ${locationData.longitude}")
+            LogManager.i(LogManager.TAG_GPS, "【主界面】地面站已保存，ID: $stationId")
         } catch (e: Exception) {
             LogManager.e(LogManager.TAG_GPS, "【主界面】保存地面站失败", e)
             throw e

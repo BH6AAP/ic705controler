@@ -81,7 +81,8 @@ object OptimizedPassCalculator {
         val observerLon = station.longitude
         val observerAlt = station.altitude
 
-        LogManager.i("OptimizedPassCalculator", "开始计算 ${satellites.size} 颗卫星的过境信息, 地面站: ${station.name}, 纬度=$observerLat°, 经度=$observerLon°")
+        LogManager.i("OptimizedPassCalculator", "开始计算 ${satellites.size} 颗卫星的过境信息, 地面站: ${station.name}")
+        LogManager.d("OptimizedPassCalculator", "地面站坐标: 纬度=$observerLat°, 经度=$observerLon°")
 
         try {
             // 获取NTP校准后的时间作为起始时间

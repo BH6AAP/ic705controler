@@ -465,11 +465,24 @@ private fun parseTleTextData(text: String): List<com.bh6aap.ic705Cter.data.datab
 
                 if (tleLine1.isNotEmpty() && tleLine2.isNotEmpty()) {
                     val noradId = tleLine1.substring(2, 7).trim()
+
+                    // Reject non-numeric NORAD IDs (same hardening as TleDataManager)
+                    if (noradId.isEmpty() || !noradId.all { it.isDigit() }) {
+                        i++
+                        continue
+                    }
+
+                    // Validate TLE checksums (mod-10) to reject corrupted data
+                    if (!validateTleChecksumLocal(tleLine1) || !validateTleChecksumLocal(tleLine2)) {
+                        i++
+                        continue
+                    }
+
                     val intlDesignator = tleLine1.substring(9, 17).trim()
 
                     satellites.add(
                         com.bh6aap.ic705Cter.data.database.entity.SatelliteEntity(
-                            name = name,
+                            name = name.take(100),
                             noradId = noradId,
                             internationalDesignator = intlDesignator.takeIf { it.isNotEmpty() },
                             tleLine1 = tleLine1,
@@ -488,6 +501,25 @@ private fun parseTleTextData(text: String): List<com.bh6aap.ic705Cter.data.datab
     }
 
     return satellites
+}
+
+/**
+ * Validate a TLE line using the standard modulo-10 checksum.
+ * Mirrors TleDataManager.validateTleChecksum.
+ */
+private fun validateTleChecksumLocal(line: String): Boolean {
+    if (line.length < 69) return false
+    var sum = 0
+    for (i in 0 until 68) {
+        val c = line[i]
+        when {
+            c.isDigit() -> sum += c.digitToInt()
+            c == '-'    -> sum++
+        }
+    }
+    val expected = sum % 10
+    val actual = line[68].digitToIntOrNull() ?: return false
+    return expected == actual
 }
 
 /**

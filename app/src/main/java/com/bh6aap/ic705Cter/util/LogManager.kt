@@ -171,7 +171,12 @@ object LogManager {
      * 记录位置信息
      */
     fun locationInfo(tag: String, latitude: Double, longitude: Double, accuracy: Float) {
-        i(tag, "【位置信息】纬度: $latitude, 经度: $longitude, 精度: ${accuracy}米")
+        if (isDebugEnabled) {
+            // Full coordinates only in debug builds to protect user home location
+            i(tag, "【位置信息】纬度: $latitude, 经度: $longitude, 精度: ${accuracy}米")
+        } else {
+            i(tag, "【位置信息】已获取, 精度: ${accuracy}米")
+        }
     }
 
     /**

@@ -299,19 +299,14 @@ class SatelliteTrackingController(
                     civController.stopCwTransmission()
                     delay(100) // 短暂延迟确保命令发送
 
-                    // 2. 重置电台模式为转发器的上下行模式
+                    // 2. 重置电台模式为转发器的上下行模式（不使用用户覆盖，反向转发器翻转Data边带）
                     val downlinkMode = parseMode(transmitter.mode)
-                    val uplinkMode = if (transmitter.uplinkMode != null) {
-                        parseMode(transmitter.uplinkMode)
-                    } else {
-                        downlinkMode
-                    }
+                    val uplinkMode = resolveNativeUplinkMode(transmitter)
 
                     LogManager.i(TAG, "停止跟踪，重置电台模式 - 下行: $downlinkMode, 上行: $uplinkMode")
 
-                    // 设置VFO A模式（接收/下行）
-                    val vfoAModeCode = modeToCivCode(downlinkMode)
-                    val vfoASuccess = civController.setVfoAMode(vfoAModeCode)
+                    // 设置VFO A模式（接收/下行）使用setVfoModeString以支持USB-D等Data模式
+                    val vfoASuccess = civController.setVfoModeString(0x00, downlinkMode)
                     if (vfoASuccess) {
                         LogManager.i(TAG, "VFO A模式已重置为: $downlinkMode")
                     } else {
@@ -320,9 +315,8 @@ class SatelliteTrackingController(
 
                     delay(50) // 短暂延迟
 
-                    // 设置VFO B模式（发射/上行）
-                    val vfoBModeCode = modeToCivCode(uplinkMode)
-                    val vfoBSuccess = civController.setVfoBMode(vfoBModeCode)
+                    // 设置VFO B模式（发射/上行）使用setVfoModeString以支持USB-D等Data模式
+                    val vfoBSuccess = civController.setVfoModeString(0x01, uplinkMode)
                     if (vfoBSuccess) {
                         LogManager.i(TAG, "VFO B模式已重置为: $uplinkMode")
                     } else {
@@ -381,6 +375,10 @@ class SatelliteTrackingController(
             "USB", "LSB", "CW", "FM", "AM", "RTTY", "CW-R", "RTTY-R" -> mode.uppercase()
             "CW-R" -> "CW-R"
             "RTTY-R" -> "RTTY-R"
+            // Data模式 (USB-D/LSB-D) 及FT4/FT8/FT2别名，映射到USB-D
+            "USB-D" -> "USB-D"
+            "LSB-D" -> "LSB-D"
+            "FT8", "FT4", "FT2", "FT4/FT8", "MSK144", "WSPR" -> "USB-D"
             else -> "USB" // 默认模式
         }
     }
@@ -556,9 +554,11 @@ class SatelliteTrackingController(
             return
         }
 
-        // 发送多普勒补偿后的频率到电台，并设置模式（使用模式覆盖）
-        val rxMode = getEffectiveMode(transmitter.mode)
-        val txMode = getEffectiveMode(transmitter.uplinkMode ?: transmitter.mode)
+        // 发送多普勒补偿后的频率到电台，并设置模式
+        // parseMode 将 FT8/FT4 等映射为 USB-D；resolveUplinkMode 对反向转发器翻转 Data 边带
+        val rxMode = getEffectiveRxMode(parseMode(transmitter.mode))
+        val txMode = resolveUplinkMode(transmitter)
+        LogManager.i(TAG, "线性跟踪模式 - 下行(RX): $rxMode, 上行(TX): $txMode, 反向转发器: ${transmitter.invert}")
         sendInitialFrequencies(groundDownlink, groundUplink, rxMode, txMode)
 
         // 初始化基准值
@@ -601,9 +601,11 @@ class SatelliteTrackingController(
             return
         }
 
-        // 发送多普勒补偿后的频率到电台，并设置模式（使用模式覆盖）
-        val rxMode = getEffectiveMode(transmitter.mode)
-        val txMode = getEffectiveMode(transmitter.uplinkMode ?: transmitter.mode)
+        // 发送多普勒补偿后的频率到电台，并设置模式
+        // parseMode 将 FT8/FT4 等映射为 USB-D；resolveUplinkMode 对反向转发器翻转 Data 边带
+        val rxMode = getEffectiveRxMode(parseMode(transmitter.mode))
+        val txMode = resolveUplinkMode(transmitter)
+        LogManager.i(TAG, "FM跟踪模式 - 下行(RX): $rxMode, 上行(TX): $txMode, 反向转发器: ${transmitter.invert}")
         sendInitialFrequencies(groundDownlink, groundUplink, rxMode, txMode)
         
         // 初始化基准值
@@ -1873,6 +1875,46 @@ class SatelliteTrackingController(
     }
 
     /**
+     * 翻转 Data 模式边带：USB-D ↔ LSB-D（用于反向线性转发器）
+     * 对非 Data 模式（FM、CW 等）无影响。
+     * IC-705 是单工机器，反向转发器上行 LSB-D 对应下行 USB-D，
+     * 若两个 VFO 均设 USB-D，发射边带将错误。
+     */
+    private fun flipDataMode(mode: String): String = when (mode) {
+        "USB-D" -> "LSB-D"
+        "LSB-D" -> "USB-D"
+        else -> mode
+    }
+
+    /**
+     * 解析上行（发射）模式，考虑反向转发器的边带翻转。
+     *
+     * 优先级：
+     *   1. 用户手动覆盖（txModeOverride / modeOverride）→ 直接使用，不翻转
+     *   2. SatNOGS 明确提供 uplinkMode → parseMode 后直接使用
+     *   3. SatNOGS 未提供 uplinkMode + 反向转发器 → parseMode(downlink) 后翻转 Data 边带
+     *   4. SatNOGS 未提供 uplinkMode + 同向转发器 → parseMode(downlink)，与下行相同
+     *
+     * 对非 Data 模式（USB、FM、CW 等），flipDataMode 不做任何改变。
+     */
+    private fun resolveUplinkMode(transmitter: Transmitter): String {
+        val userOverride = txModeOverride ?: modeOverride
+        if (userOverride != null) return userOverride
+        if (transmitter.uplinkMode != null) return parseMode(transmitter.uplinkMode)
+        val rxMode = parseMode(transmitter.mode)
+        return if (transmitter.invert) flipDataMode(rxMode) else rxMode
+    }
+
+    /**
+     * 解析上行模式（不考虑用户覆盖，用于停止跟踪时重置电台至卫星本机模式）。
+     */
+    private fun resolveNativeUplinkMode(transmitter: Transmitter): String {
+        if (transmitter.uplinkMode != null) return parseMode(transmitter.uplinkMode)
+        val rxMode = parseMode(transmitter.mode)
+        return if (transmitter.invert) flipDataMode(rxMode) else rxMode
+    }
+
+    /**
      * 发送当前模式命令到电台
      * 用于跟踪时切换模式，或未跟踪时直接设置卫星模式
      */
@@ -1885,8 +1927,9 @@ class SatelliteTrackingController(
 
         if (transmitter != null) {
             // 有转发器数据时，使用转发器默认模式结合覆盖设置
-            rxMode = getEffectiveRxMode(transmitter.mode)
-            txMode = getEffectiveTxMode(transmitter.uplinkMode ?: transmitter.mode)
+            // parseMode 将 FT8/FT4 等映射为 USB-D；resolveUplinkMode 对反向转发器翻转 Data 边带
+            rxMode = getEffectiveRxMode(parseMode(transmitter.mode))
+            txMode = resolveUplinkMode(transmitter)
         } else {
             // 无转发器数据时，直接使用覆盖设置或默认值
             rxMode = rxModeOverride ?: modeOverride ?: "USB"

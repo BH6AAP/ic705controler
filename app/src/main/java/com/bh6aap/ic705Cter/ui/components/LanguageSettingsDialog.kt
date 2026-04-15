@@ -164,14 +164,14 @@ fun LanguageSettingsDialog(
                             // 立即重启按钮
                             Button(
                                 onClick = {
-                                    // 重启应用
+                                    // 重启应用（通过 Intent 清除任务栈，不使用 Runtime.exit
+                                    // 以避免中断进行中的数据库写入和蓝牙操作）
                                     val activity = context as? Activity
                                     activity?.let {
                                         val intent = Intent(it, SplashActivity::class.java)
                                         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
                                         it.startActivity(intent)
                                         it.finishAffinity()
-                                        Runtime.getRuntime().exit(0)
                                     }
                                 },
                                 modifier = Modifier.fillMaxWidth(),

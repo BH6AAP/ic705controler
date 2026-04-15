@@ -72,7 +72,7 @@ object MaidenheadConverter {
             lat += latDiv / 2
             lon += lonDiv / 2
 
-            LogManager.i(LogManager.TAG_GPS, "【梅登海德】转换成功: $maidenhead -> 纬度: $lat, 经度: $lon")
+            LogManager.d(LogManager.TAG_GPS, "【梅登海德】转换成功: $maidenhead -> 纬度: $lat, 经度: $lon")
             doubleArrayOf(lat, lon)
         } catch (e: Exception) {
             LogManager.e(LogManager.TAG_GPS, "【梅登海德】转换失败: $maidenhead", e)
@@ -132,7 +132,7 @@ object MaidenheadConverter {
         }
 
         val result = sb.toString()
-        LogManager.i(LogManager.TAG_GPS, "【梅登海德】转换成功: 纬度=$latitude, 经度=$longitude -> $result")
+        LogManager.d(LogManager.TAG_GPS, "【梅登海德】转换成功: 纬度=$latitude, 经度=$longitude -> $result")
         return result
     }
 

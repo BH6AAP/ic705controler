@@ -324,12 +324,10 @@ class SplashActivity : BaseActivity() {
                 locationData = LocationData.fromLocation(location)
                 val providerName = if (location.provider == android.location.LocationManager.GPS_PROVIDER) "GPS" else "网络定位"
                 LogManager.i(LogManager.TAG_GPS, "========================================")
-                LogManager.i(LogManager.TAG_GPS, "【$providerName 位置获取成功】")
-                LogManager.i(LogManager.TAG_GPS, "  纬度: ${locationData.latitude}")
-                LogManager.i(LogManager.TAG_GPS, "  经度: ${locationData.longitude}")
-                LogManager.i(LogManager.TAG_GPS, "  海拔: ${locationData.altitude} 米")
-                LogManager.i(LogManager.TAG_GPS, "  精度: ${locationData.accuracy} 米")
-                LogManager.i(LogManager.TAG_GPS, "  提供者: ${locationData.provider}")
+                LogManager.i(LogManager.TAG_GPS, "【$providerName 位置获取成功】精度: ${locationData.accuracy}米, 提供者: ${locationData.provider}")
+                LogManager.d(LogManager.TAG_GPS, "  纬度: ${locationData.latitude}")
+                LogManager.d(LogManager.TAG_GPS, "  经度: ${locationData.longitude}")
+                LogManager.d(LogManager.TAG_GPS, "  海拔: ${locationData.altitude} 米")
                 LogManager.i(LogManager.TAG_GPS, "========================================")
             } else {
                 LogManager.w(LogManager.TAG_GPS, "【位置获取超时】GPS和网络定位均未在${GPS_TIMEOUT_MS/1000}秒内返回")
@@ -520,7 +518,7 @@ class SplashActivity : BaseActivity() {
 
             val stationId = dbHelper.insertStation(station)
             LogManager.i(LogManager.TAG_DATABASE, "【数据库】地面站已保存，ID: $stationId")
-            LogManager.i(LogManager.TAG_DATABASE, "【数据库】位置详情: 纬度=${station.latitude}, 经度=${station.longitude}, 海拔=${station.altitude}")
+            LogManager.d(LogManager.TAG_DATABASE, "【数据库】位置详情: 纬度=${station.latitude}, 经度=${station.longitude}, 海拔=${station.altitude}")
         } catch (e: Exception) {
             LogManager.e(LogManager.TAG_DATABASE, "【数据库异常】保存地面站失败", e)
             throw e
