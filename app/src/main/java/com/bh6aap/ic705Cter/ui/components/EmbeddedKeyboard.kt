@@ -57,32 +57,41 @@ fun EmbeddedKeyboard(
                 startPadding = 20.dp
             )
 
-            // 第四行: Z X C V B N M
-            KeyboardRow(
-                keys = listOf("Z", "X", "C", "V", "B", "N", "M"),
-                onKeyPress = onKeyPress,
-                startPadding = 40.dp
-            )
-
-            // 第五行: 退格和完成
+            // 第四行: Z X C V B N M 和退格键
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
+                Spacer(modifier = Modifier.width(40.dp))
+                
+                listOf("Z", "X", "C", "V", "B", "N", "M").forEach { key ->
+                    KeyButton(
+                        text = key,
+                        onClick = { onKeyPress(key) },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+                
                 // 退格键
                 KeyButton(
                     text = "←",
                     onClick = onBackspace,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.weight(1.5f),
                     backgroundColor = MaterialTheme.colorScheme.errorContainer,
                     contentColor = MaterialTheme.colorScheme.onErrorContainer
                 )
+            }
 
+            // 第五行: 完成键
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
                 // 完成键
                 KeyButton(
                     text = "完成",
                     onClick = onDone,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.fillMaxWidth(),
                     backgroundColor = MaterialTheme.colorScheme.primaryContainer,
                     contentColor = MaterialTheme.colorScheme.onPrimaryContainer
                 )
