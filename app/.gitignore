@@ -1,1 +1,14 @@
+# Build outputs
 /build
+/release
+
+# APK files
+*.apk
+*.aab
+
+# Output metadata
+output-metadata.json
+
+# Baseline profiles
+baselineProfiles/
+*.dm

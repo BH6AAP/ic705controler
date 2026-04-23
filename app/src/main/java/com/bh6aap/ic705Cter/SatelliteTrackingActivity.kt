@@ -13,6 +13,8 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -54,6 +56,7 @@ import com.bh6aap.ic705Cter.data.CallsignDataStore
 import com.bh6aap.ic705Cter.data.CallsignRecord
 import com.bh6aap.ic705Cter.data.radio.BluetoothConnectionManager
 import com.bh6aap.ic705Cter.sensor.SensorFusionManager
+import com.bh6aap.ic705Cter.ui.components.EmbeddedKeyboard
 import com.bh6aap.ic705Cter.tracking.DopplerDataCache
 import com.bh6aap.ic705Cter.tracking.SatelliteTracker
 import com.bh6aap.ic705Cter.tracking.SatelliteTrackingController
@@ -2765,6 +2768,7 @@ private fun SimpleCallsignRecorder(
     var inputText by remember { mutableStateOf("") }
     var searchSuggestions by remember { mutableStateOf<List<String>>(emptyList()) }
     var showSuggestions by remember { mutableStateOf(false) }
+    var showKeyboard by remember { mutableStateOf(false) }
     val records by dataStore.getCallsigns().collectAsState(initial = emptyList())
 
     // 时间格式化
@@ -2782,6 +2786,63 @@ private fun SimpleCallsignRecorder(
         }
         return utcFormat.format(java.util.Date())
     }
+    
+    // 保存呼号记录的函数
+    fun saveCallsign() {
+        if (inputText.isNotBlank()) {
+            scope.launch {
+                val recordMode = when {
+                    isLinearTransmitter && isCwModuleExpanded -> "CW"
+                    isLinearTransmitter && !isCwModuleExpanded -> "USB"
+                    else -> "FM"
+                }
+                LogManager.i("SimpleCallsignRecorder", "保存呼号记录，模式: $recordMode")
+                dataStore.saveCallsign(
+                    CallsignRecord(
+                        callsign = inputText.trim(),
+                        satelliteName = satelliteName,
+                        frequency = satelliteFrequency,
+                        mode = recordMode,
+                        grid = grid4,
+                        utcTime = getCurrentUtcTime()
+                    )
+                )
+                inputText = ""
+                showSuggestions = false
+                showKeyboard = false
+            }
+        }
+    }
+    
+    // 处理键盘输入
+    fun handleKeyPress(key: String) {
+        val newText = inputText + key
+        inputText = newText
+        
+        // 实时搜索呼号
+        if (newText.length >= 2) {
+            searchSuggestions = callsignMatcher.search(newText, limit = 10)
+            showSuggestions = searchSuggestions.isNotEmpty()
+        } else {
+            showSuggestions = false
+        }
+    }
+    
+    // 处理退格
+    fun handleBackspace() {
+        if (inputText.isNotEmpty()) {
+            val newText = inputText.dropLast(1)
+            inputText = newText
+            
+            // 更新搜索建议
+            if (newText.length >= 2) {
+                searchSuggestions = callsignMatcher.search(newText, limit = 10)
+                showSuggestions = searchSuggestions.isNotEmpty()
+            } else {
+                showSuggestions = false
+            }
+        }
+    }
 
     Surface(
         modifier = modifier,
@@ -2790,256 +2851,201 @@ private fun SimpleCallsignRecorder(
         tonalElevation = 0.dp,
         shadowElevation = 0.dp
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 12.dp, vertical = 8.dp)
+        Box(
+            modifier = Modifier.fillMaxSize()
         ) {
-            // 标题栏
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = stringResource(R.string.tracking_callsign_records, records.size),
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
-                // 清空按钮
-                if (records.isNotEmpty()) {
-                    TextButton(
-                        onClick = { scope.launch { dataStore.clearAll() } },
-                        modifier = Modifier.height(32.dp),
-                        contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)
-                    ) {
-                        Text(
-                            text = stringResource(R.string.tracking_clear),
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.error
-                        )
-                    }
+            // 检测是否有拖拽的呼号，自动填入
+            LaunchedEffect(draggedCallsign) {
+                if (draggedCallsign != null) {
+                    inputText = draggedCallsign
+                    onDragAccept()
+                    LogManager.i("SatelliteTracking", "呼号记录器接收拖拽呼号: $draggedCallsign")
                 }
             }
 
-            // 输入框和搜索建议
-            Box(modifier = Modifier.fillMaxWidth()) {
-                // 检测是否有拖拽的呼号，自动填入
-                LaunchedEffect(draggedCallsign) {
-                    if (draggedCallsign != null) {
-                        inputText = draggedCallsign
-                        onDragAccept()
-                        LogManager.i("SatelliteTracking", "呼号记录器接收拖拽呼号: $draggedCallsign")
-                    }
-                }
-
-                Column {
-                    OutlinedTextField(
-                        value = inputText,
-                        onValueChange = { newText ->
-                            // 仅允许大写英文字母和数字，自动转换为大写
-                            val filtered = newText.uppercase().filter { char ->
-                                char.isDigit() || (char.isLetter() && char.isUpperCase())
-                            }
-                            inputText = filtered
-
-                            // 实时搜索呼号（返回10个结果，显示为2行x5列）
-                            if (filtered.length >= 2) {
-                                searchSuggestions = callsignMatcher.search(filtered, limit = 10)
-                                showSuggestions = searchSuggestions.isNotEmpty()
-                            } else {
-                                showSuggestions = false
-                            }
-                        },
-                        placeholder = {
-                            Text(
-                                "输入呼号（可从CW历史拖拽）...",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-                            )
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 20.dp)
-                            .border(
-                                width = if (draggedCallsign != null) 2.dp else 1.dp,
-                                color = if (draggedCallsign != null) {
-                                    MaterialTheme.colorScheme.primary
-                                } else {
-                                    MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
-                                },
-                                shape = RoundedCornerShape(6.dp)
-                            ),
-                        textStyle = MaterialTheme.typography.bodySmall,
-                        singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f),
-                            unfocusedContainerColor = if (draggedCallsign != null) {
-                                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
-                            } else {
-                                MaterialTheme.colorScheme.surface.copy(alpha = 0.3f)
-                            },
-                            focusedBorderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
-                            unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
-                        ),
-                        shape = RoundedCornerShape(6.dp),
-                        keyboardOptions = KeyboardOptions(
-                            keyboardType = androidx.compose.ui.text.input.KeyboardType.Text,
-                            imeAction = androidx.compose.ui.text.input.ImeAction.Done
-                        ),
-                        keyboardActions = KeyboardActions(
-                            onDone = {
-                                showSuggestions = false
-                                if (inputText.isNotBlank()) {
-                                    scope.launch {
-                                        // 根据CW键入状态判断当前模式
-                                        val recordMode = when {
-                                            isLinearTransmitter && isCwModuleExpanded -> "CW"
-                                            isLinearTransmitter && !isCwModuleExpanded -> "USB"
-                                            else -> "FM"
-                                        }
-                                        LogManager.i("SimpleCallsignRecorder", "保存呼号记录，模式: $recordMode (CW展开: $isCwModuleExpanded, 线性: $isLinearTransmitter)")
-                                        dataStore.saveCallsign(
-                                            CallsignRecord(
-                                                callsign = inputText.trim(),
-                                                satelliteName = satelliteName,
-                                                frequency = satelliteFrequency,
-                                                mode = recordMode,
-                                                grid = grid4,
-                                                utcTime = getCurrentUtcTime()
-                                            )
-                                        )
-                                        inputText = ""
-                                    }
-                                }
-                            }
-                        ),
-                        trailingIcon = {
-                            if (inputText.isNotBlank()) {
-                                IconButton(
-                                    onClick = {
-                                        scope.launch {
-                                            // 根据CW键入状态判断当前模式
-                                            val recordMode = when {
-                                                isLinearTransmitter && isCwModuleExpanded -> "CW"
-                                                isLinearTransmitter && !isCwModuleExpanded -> "USB"
-                                                else -> "FM"
-                                            }
-                                            LogManager.i("SimpleCallsignRecorder", "保存呼号记录，模式: $recordMode (CW展开: $isCwModuleExpanded, 线性: $isLinearTransmitter)")
-                                            dataStore.saveCallsign(
-                                                CallsignRecord(
-                                                    callsign = inputText.trim(),
-                                                    satelliteName = satelliteName,
-                                                    frequency = satelliteFrequency,
-                                                    mode = recordMode,
-                                                    grid = grid4,
-                                                    utcTime = getCurrentUtcTime()
-                                                )
-                                            )
-                                            inputText = ""
-                                            showSuggestions = false
-                                        }
-                                    },
-                                    modifier = Modifier.size(32.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Check,
-                                        contentDescription = "保存",
-                                        tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                }
-                            }
-                        }
+            // 主内容区域（标题、输入框、记录列表）
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 12.dp, vertical = 8.dp)
+            ) {
+                // 标题栏
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = stringResource(R.string.tracking_callsign_records, records.size),
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
 
-                    // 搜索建议下拉列表（2行x5列网格布局）
-                    if (showSuggestions && searchSuggestions.isNotEmpty()) {
-                        Surface(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 4.dp),
-                            shape = RoundedCornerShape(6.dp),
-                            color = MaterialTheme.colorScheme.surface,
-                            tonalElevation = 2.dp,
-                            shadowElevation = 2.dp
+                    // 清空按钮
+                    if (records.isNotEmpty()) {
+                        TextButton(
+                            onClick = { scope.launch { dataStore.clearAll() } },
+                            modifier = Modifier.height(32.dp),
+                            contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)
                         ) {
-                            Column(
-                                modifier = Modifier.padding(8.dp)
+                            Text(
+                                text = stringResource(R.string.tracking_clear),
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
+                    }
+                }
+
+                // 只读文本框，点击显示内嵌键盘
+                val interactionSource = remember { MutableInteractionSource() }
+                
+                // 监听点击事件
+                LaunchedEffect(interactionSource) {
+                    interactionSource.interactions.collect { interaction ->
+                        if (interaction is androidx.compose.foundation.interaction.PressInteraction.Release) {
+                            showKeyboard = !showKeyboard
+                        }
+                    }
+                }
+                
+                OutlinedTextField(
+                    value = inputText,
+                    onValueChange = { }, // 禁用系统输入法
+                    readOnly = true, // 设置为只读，禁用系统键盘
+                    interactionSource = interactionSource,
+                    placeholder = {
+                        Text(
+                            "点击输入呼号（可从CW历史拖拽）...",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                        )
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 20.dp)
+                        .border(
+                            width = if (draggedCallsign != null || showKeyboard) 2.dp else 1.dp,
+                            color = if (draggedCallsign != null || showKeyboard) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+                            },
+                            shape = RoundedCornerShape(6.dp)
+                        ),
+                    textStyle = MaterialTheme.typography.bodySmall,
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f),
+                        unfocusedContainerColor = if (draggedCallsign != null || showKeyboard) {
+                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                        } else {
+                            MaterialTheme.colorScheme.surface.copy(alpha = 0.3f)
+                        },
+                        focusedBorderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+                    ),
+                    shape = RoundedCornerShape(6.dp),
+                    trailingIcon = {
+                        if (inputText.isNotBlank()) {
+                            IconButton(
+                                onClick = { saveCallsign() },
+                                modifier = Modifier.size(32.dp)
                             ) {
-                                // 将建议分成每行5个
-                                val rows = searchSuggestions.chunked(5)
-                                rows.forEach { rowItems ->
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                    ) {
-                                        rowItems.forEach { suggestion ->
-                                            Surface(
+                                Icon(
+                                    imageVector = Icons.Default.Check,
+                                    contentDescription = "保存",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        }
+                    }
+                )
+
+                // 搜索建议下拉列表（2行x5列网格布局）
+                if (showSuggestions && searchSuggestions.isNotEmpty()) {
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 4.dp),
+                        shape = RoundedCornerShape(6.dp),
+                        color = MaterialTheme.colorScheme.surface,
+                        tonalElevation = 2.dp,
+                        shadowElevation = 2.dp
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(8.dp)
+                        ) {
+                            // 将建议分成每行5个
+                            val rows = searchSuggestions.chunked(5)
+                            rows.forEach { rowItems ->
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    rowItems.forEach { suggestion ->
+                                        Surface(
+                                            modifier = Modifier
+                                                .weight(1f)
+                                                .clickable {
+                                                    inputText = suggestion
+                                                    showSuggestions = false
+                                                    showKeyboard = false
+                                                },
+                                            shape = RoundedCornerShape(4.dp),
+                                            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                                        ) {
+                                            Box(
                                                 modifier = Modifier
-                                                    .weight(1f)
-                                                    .clickable {
-                                                        inputText = suggestion
-                                                        showSuggestions = false
-                                                    },
-                                                shape = RoundedCornerShape(4.dp),
-                                                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                                                    .fillMaxWidth()
+                                                    .padding(vertical = 6.dp, horizontal = 2.dp),
+                                                contentAlignment = Alignment.Center
                                             ) {
-                                                Box(
-                                                    modifier = Modifier
-                                                        .fillMaxWidth()
-                                                        .padding(vertical = 6.dp, horizontal = 2.dp),
-                                                    contentAlignment = Alignment.Center
-                                                ) {
-                                                    Text(
-                                                        text = suggestion,
-                                                        style = MaterialTheme.typography.bodySmall,
-                                                        color = MaterialTheme.colorScheme.onSurface,
-                                                        fontWeight = FontWeight.Medium,
-                                                        maxLines = 1
-                                                    )
-                                                }
+                                                Text(
+                                                    text = suggestion,
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = MaterialTheme.colorScheme.onSurface,
+                                                    fontWeight = FontWeight.Medium,
+                                                    maxLines = 1
+                                                )
                                             }
                                         }
-                                        // 填充剩余空间（如果一行不足5个）
-                                        repeat(5 - rowItems.size) {
-                                            Spacer(modifier = Modifier.weight(1f))
-                                        }
                                     }
-                                    // 行间距
-                                    if (rowItems !== rows.lastOrNull()) {
-                                        Spacer(modifier = Modifier.height(4.dp))
+                                    // 填充剩余空间（如果一行不足5个）
+                                    repeat(5 - rowItems.size) {
+                                        Spacer(modifier = Modifier.weight(1f))
                                     }
+                                }
+                                // 行间距
+                                if (rowItems !== rows.lastOrNull()) {
+                                    Spacer(modifier = Modifier.height(4.dp))
                                 }
                             }
                         }
                     }
                 }
-            }
 
-            // 记录列表
-            if (records.isNotEmpty()) {
-                HorizontalDivider(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 6.dp),
-                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                )
+                // 记录列表
+                if (records.isNotEmpty()) {
+                    HorizontalDivider(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 6.dp),
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                    )
 
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f)
-                ) {
-                    items(records) { record ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .heightIn(min = 48.dp)
-                                .padding(vertical = 4.dp),
+                    LazyColumn(
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        items(records) { record ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .heightIn(min = 48.dp)
+                                    .padding(vertical = 4.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
@@ -3115,9 +3121,27 @@ private fun SimpleCallsignRecorder(
                     }
                 }
             }
+            
+            // 键盘显示时添加底部间距，避免被键盘遮挡
+            if (showKeyboard) {
+                Spacer(modifier = Modifier.height(260.dp))
+            }
         }
-    }
-}
+        
+        // 内嵌键盘固定在整个界面底部（覆盖层）
+        if (showKeyboard) {
+            EmbeddedKeyboard(
+                onKeyPress = { key -> handleKeyPress(key) },
+                onBackspace = { handleBackspace() },
+                onDone = { saveCallsign() },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.BottomCenter)
+            )
+        }
+    } // Box 关闭
+} // Surface 关闭
+} // SimpleCallsignRecorder 函数关闭
 
 /**
  * 紧凑频率显示面板（用于紧凑布局）
