@@ -1,0 +1,3286 @@
+REMOTE CONTROL
+Remote control (CI-V) information
+To use the USB cable between the transceiver and a 
+PC, you must first install a USB driver�
+The latest USB driver and installation guide can be 
+downloaded from the Icom website�
+Carefully read the guide, before installing the driver�
+https://www�icomjapan�com/support/
+USB cable
+(User supplied) PC
+To a USB port To the [microUSB] port
+Right side panel
+ DPreparing
+The Icom Communications Interface V (CI-V) is used for remote control�
+To control the transceiver, first set its address, data communication speed, and transceive function�
+These settings are set in the Set mode (Refer to the IC-705 instruction manual)�
+ DAbout the data format
+The CI-V system can be written using the following data formats� Data formats differ according to 
+command numbers� A data area or sub command is added for some commands�
+Controller to IC-705 OK message to controller
+NG message to controller IC-705 to controller
+ DCI-V connection
+The transceiver’s operating frequency, mode, VFO and memory selection, can be remotely controlled 
+using a PC�
+The Icom Communications Interface V (CI-V) controls the transceiver�
+Connect the transceiver to a PC with a USB cable (User supplied)�
+ LMake the connection as short as possible� The transceiver may not be recognized by the controller, depending 
+on the USB cable length�
+ LWhen connecting to a USB port on your PC with the USB driver installed, USB (A) and USB (B) are named as 
+“IC-705 Serial Port A (CI-V)” and “IC-705 Serial Port B�”
+FEFE A4 E0 Cn Sc Data area FD
+Preamble
+code (fixed)
+Transceiver’s
+default address
+Controller’s
+default address
+Command number
+(see the command table)
+Sub command number
+(see the command table)
+BCD code data for
+frequency or memory
+number entry
+End of message
+code (fixed)
+FEFE E0 A4 FB FD
+FEFE E0 A4 FA FD
+Preamble
+code (fixed)
+Controller’s
+default address
+Transceiver’s
+default address
+OK code
+(fixed)
+End of message
+code (fixed)
+NG code
+(fixed)
+q w e r t y u
+FEFE E0 A4 Cn Sc Data area FD
+q w e r t y u
+3
+REMOTE CONTROL
+Remote control (CI-V) information
+ DCommand table
+Cmd� Sub cmd� Data Description
+00 See p� 17� Send the frequency data 
+(transceive)
+01 See p� 17� Send the mode data (transceive)
+02*1 See p� 17� Read the band edge frequencies
+03*1 See p� 17� Read the operating frequency
+04*1 See p� 17� Read the operating mode
+05*2 See p� 17� Set the operating frequency
+06*2 See p� 17� Set the operating mode
+07 Select the VFO mode
+00 Select VFO A
+01 Select VFO B
+A0 Equalize VFO A and VFO B
+ LWhen the split frequency 
+operation is OFF in the Memory 
+mode or the Call channel mode, 
+“FA” (NG) is returned�
+B0 Exchange VFO A and VFO B�
+ LWhen the split frequency 
+operation is OFF in the Memory 
+mode or the Call channel mode, 
+“FA” (NG) is returned�
+08*2 Select the Memory mode
+0000 ~ 0099 Select the Memory channel
+( Memory channel: 0000 ~ 0099 
+Call channel:  0000 (144C1), 
+0001 (144C2), 
+0002 (430C1), 
+0003 (430C2))
+A0 0000 ~ 0100 Select the Memory group
+( Memory channel group: 
+ 0000 ~ 0099 
+Call channel group: 0100)
+09 Memory write
+0A Memory copy to VFO
+0B Memory clear
+0C*1 See p� 17� Read frequency offset
+0D*2 See p� 17� Send frequency offset
+0E 00 Cancel the scan
+01 Start a Programmed/memory scan
+02 Start a Programmed scan
+03 Start a ∂F scan
+12 Start a Fine programmed scan
+13 Start a Fine ∂F scan
+22 Start a Memory scan
+23 Start a Select memory scan
+24 Start a Mode Select scan
+Ax*2 
+(x=1 ~ 7)
+Select ∂F scan span
+( x=1 (±5kHz), x=2 (±10kHz), 
+x=3 (±20kHz), x=4 (±50kHz), 
+x=5 (±100kHz), x=6 (±500kHz), 
+x=7 (±1MHz))
+B0*2 Clear the Select channel setting
+Cmd� Sub cmd� Data Description
+0E B1*2 Set as select channel
+ LThe previously set number by 
+CI-V is set after turning power 
+ON, or “1” is selected if no 
+selection is performed�
+01 ~ 03 Set the channel as a Select channel
+(01=SEL1, 02=SEL2, 03=SEL3)
+B2*2 00 ~ 03 Set the Select memory scan 
+channel
+( 00=ALL, 01=SEL1, 02=SEL2, 
+03=SEL3)
+D0*2 Set Scan resume OFF
+D3*2 Set Scan resume ON (Close&Delay)
+0F 00*1 Read Split OFF setting
+01*1 Read Split ON setting
+11*1 Read DUP– operation
+12*1 Read DUP+ operation
+00*2 Set Split function OFF
+01*2 Set Split function ON
+10*2 Set the simplex operation
+11*2 Set DUP– operation
+12*2 Set DUP+ operation
+10* 00 ~ 13 Send/read the tuning step
+( 00=OFF (10Hz or 1Hz) 
+01=100Hz 02=500Hz 
+03=1kHz 04=5kHz 
+05=6�25kHz 06=8�33kHz 
+07=9kHz 08=10kHz 
+09=12�5kHz 10=20kHz 
+11=25kHz 12=50kHz 
+13=100kHz)
+11* 00 Send/read attenuator OFF setting
+20 Send/read 20 dB attenuator setting
+ LYou can set in the HF and 
+50 MHz bands�
+13 00 Speech all data by voice synthesizer
+(S meter level, frequency, and mode)
+01 Speech the operating frequency and 
+S meter level by voice synthesizer
+02 Speech the operating mode by voice 
+synthesizer
+ LThe mode is announced after the 
+ongoing speech�
+14* 01 0000 ~ 0255 Send/read the AF level
+(0000=Minimum ~ 0255=Maximum)
+02 0000 ~ 0255 Send/read the RF gain level
+(0000=Minimum ~ 0255=Maximum)
+03 0000 ~ 0255 Send/read the squelch level
+(0000=Minimum ~ 0255=Maximum)
+06 0000 ~ 0255 Send/read the NR level
+(0000=0% ~ 0255=100%)
+07 0000 ~ 0255 Send/read [TWIN PBT] (PBT1) position
+( 0000=max� Counter Clockwise ~  
+0128=center ~ 0255=max� Clockwise)
+08 0000 ~ 0255 Send/read [TWIN PBT] (PBT2) 
+position
+( 0000=max� Counter Clockwise ~  
+0128=center ~ 0255=max� Clockwise)
+4
+REMOTE CONTROL
+Cmd� Sub cmd� Data Description
+14* 09 0000 ~ 0255 Send/read CW pitch (5 Hz steps)
+( 0000=300 Hz ~ 0128=600 Hz ~ 
+0255=900 Hz)
+0A 0000 ~ 0255 Send/read the selected band’s RF 
+power
+(0000=Minimum ~ 0255=Maximum)
+0B 0000 ~ 0255 Send/read MIC gain
+(0000=Minimum ~ 0255=Maximum)
+0C 0000 ~ 0255 Send/read keying speed
+(0000=6 WPM ~ 0255=48 WPM)
+0D 0000 ~ 0255 Send/read Notch filter setting
+( 0000=max� Counter Clockwise ~ 
+0128=center ~ 0255=max� Clockwise)
+0E 0000 ~ 0255 Send/read the COMP level
+(0000=0 ~ 0255=10)
+0F 0000 ~ 0255 Send/read the Break-IN Delay setting
+(0000=2�0d ~ 0255=13�0d)
+12 0000 ~ 0255 Send/read NB level
+(0000=0% ~ 0255=100%)
+15 0000 ~ 0255 Send/read Monitor audio [MONI] 
+level
+(0000=0% ~ 0255=100%)
+16 0000 ~ 0255 Send/read the VOX gain
+(0000=0% ~ 0255=100%)
+17 0000 ~ 0255 Send/read the Anti VOX gain
+(0000=0% ~ 0255=100%)
+19 0000 ~ 0255 Send/read LCD backlight brightness
+(0000=0% ~ 0255=100%)
+15*1 01 00/01 Read noise or S-meter squelch status
+(00=Close, 01=Open)
+02 0000 ~ 0255 Read S-meter level
+( 0000=S0, 0120=S9,  
+0241=S9+60 dB)
+05 00/01 Read various squelch (tone squelch, 
+and so on) status
+(00=Close, 01=Open)
+07 00/01 Read the OVF status
+( 00=OVF indicator is OFF,  
+01=OVF indicator is ON)
+11 0000 ~ 0255 Read the Po meter level
+(0000=0% ~ 0143=50% ~ 0213=100%)
+12 0000 ~ 0255 Read SWR meter level
+( 0000=SWR1�0, 0048=SWR1�5, 
+0080=SWR2�0, 0120=SWR3�0)
+13 0000 ~ 0255 Read ALC meter level
+(0000=Minimum ~ 0120=Maximum)
+14 0000 ~ 0255 Read COMP meter level
+( 0000=0 dB ~ 0130=15 dB ~ 
+0210=25�5 dB)
+15 0000 ~ 0255 Read Vd meter level
+(0000=0 V ~ 0075=5 V ~ 0241=16 V)
+16 0000 ~ 0255 Read Id meter level
+(0000=0 A ~ 0121=2 A ~ 0241=4 A)
+16* 02 00 ~ 02 Send/read the Preamp
+( 00=OFF, 01=P�AMP1, 02=P�AMP2)
+( In the 144 or 430 MHz bands, 
+00=OFF, 01=ON)
+12 01 ~ 03 Send/read the AGC time constant
+(01=FAST, 02=MID, 03=SLOW)
+Remote control (CI-V) information
+ DCommand table
+Cmd� Sub cmd� Data Description
+16* 22 00/01 Send/read the Noise blanker
+(00=OFF, 01=ON)
+40 00/01 Send/read the Noise reduction
+(00=OFF, 01=ON)
+41 00/01 Send/read the Auto Notch function
+(00=OFF, 01=ON)
+42 00/01 Send/read the Repeater tone
+(00=OFF, 01=ON)
+43 00/01 Send/read the Tone squelch
+(00=OFF, 01=ON)
+44 00/01 Send/read the Speech compressor
+(00=OFF, 01=ON)
+45 00/01 Send/read the Monitor [MONI] 
+function
+(00=OFF, 01=ON)
+46 00/01 Send/read the VOX function
+(00=OFF, 01=ON)
+47 00 ~ 02 Send/read the BK-IN function
+( 00=BK-IN OFF, 01=Semi BK-IN ON,  
+02=Full BK-IN ON)
+48 00/01 Send/read the Manual Notch function
+(00=OFF, 01=ON)
+4B 00/01 Send/read the DTCS function
+(00=OFF, 01=ON)
+4F 00/01 Send/read the Twin peak filter
+(00=OFF, 01=ON)
+( Can be turned ON only when Mark 
+and Shift are set to 2125 Hz and 
+170 Hz, respectively)
+50 00/01 Send/read the Dial lock function
+(00=OFF, 01=ON)
+56 00/01 Send/read DSP IF filter type in the 
+operating band
+(00=SHARP, 01=SOFT)
+57 00 ~ 02 Send/read the Manual Notch width
+(00=WIDE, 01=MID, 02=NAR)
+58 00 ~ 02 Send/read SSB transmit bandwidth
+(00=WIDE, 01=MID, 02=NAR)
+( One of following values is applied, 
+depending on the “COMP” status 
+(ON or OFF): 
+WIDE (Command: 1A 05 0017), 
+MID (Command: 1A 05 0018), or 
+NAR (Command: 1A 05 0019))
+5B 00 ~ 02 Send/read the DSQL (Digital Call 
+Sign squelch)/CSQL (Digital Code 
+squelch) setting
+(DV mode only)
+(00=OFF, 01=DSQL, 02=CSQL)
+5C 00 ~ 02 Send/read the GPS TX mode
+(00=OFF, 01=D-PRS, 02=NMEA)
+5D 00 ~ 03, 
+06 ~ 09
+Send/read the Tone squelch function
+( 00=OFF, 01=TONE, 02=TSQL,  
+03=DTCS, 06=DTCS (T),  
+07=TONE (T)/DTCS (R),  
+08=DTCS (T)/TSQL (R),  
+09=TONE (T)/TSQL (R))
+17*3 See p� 17� Send CW messages
+18 00 Turn OFF the transceiver
+01*4 Turn ON the transceiver
+5
+REMOTE CONTROL
+Remote control (CI-V) information
+ DCommand table
+Cmd� Sub cmd� Data Description
+19*1 00 Read the transceiver ID
+1A* 00 See pp� 18 
+and 19�
+Send/read memory contents
+01 See p� 19� Send/read band stacking register contents
+02*5 See p� 20� Send/read memory keyer contents
+03 See p� 20� Send/read the selected IF filter width
+04 See p� 20� Send/read the selected AGC time 
+constant
+05 SET > Tone Control/TBW
+0001 See p� 20� RX > SSB >
+Send/read RX HPF/LPF settings
+0002 00 ~ 10 RX > SSB >
+Send/read RX Tone (Bass) level
+(00=–5 ~ 10=+5)
+0003 00 ~ 10 RX > SSB >
+Send/read RX Tone (Treble) level
+(00=–5 ~ 10=+5)
+0004 See p� 20� RX > AM >
+Send/read RX HPF/LPF settings
+0005 00 ~ 10 RX > AM >
+Send/read RX Tone (Bass) level
+(00=–5 ~ 10=+5)
+0006 00 ~ 10 RX > AM >
+Send/read RX Tone (Treble) level
+(00=–5 ~ 10=+5)
+0007 See p� 20� RX > FM >
+Send/read RX HPF/LPF settings
+0008 00 ~ 10 RX > FM >
+Send/read RX Tone (Bass) level
+(00=–5 ~ 10=+5)
+0009 00 ~ 10 RX > FM >
+Send/read RX Tone (Treble) level
+(00=–5 ~ 10=+5)
+0010 See p� 20� RX > DV >
+Send/read RX HPF/LPF settings
+0011 00 ~ 10 RX > DV >
+Send/read RX Tone (Bass) level
+(00=–5 ~ 10=+5)
+0012 00 ~ 10 RX > DV >
+Send/read RX Tone (Treble) level
+(00=–5 ~ 10=+5)
+0013 00 ~ 10 RX > WFM >
+Send/read RX Tone (Bass) level
+(00=–5 ~ 10=+5)
+0014 00 ~ 10 RX > WFM >
+Send/read RX Tone (Treble) level
+(00=–5 ~ 10=+5)
+0015 See p� 20� RX > CW >
+Send/read RX HPF/LPF settings
+0016 See p� 20� RX > RTTY >
+Send/read RX HPF/LPF settings
+0017 00 ~ 10 TX > SSB >
+Send/read TX Tone (Bass) level
+(00=–5 ~ 10=+5)
+0018 00 ~ 10 TX > SSB >
+Send/read TX Tone (Treble) level
+(00=–5 ~ 10=+5)
+0019 See p� 20� TX > SSB >
+Send/read TX bandwidth for wide
+Cmd� Sub cmd� Data Description
+1A* 05 SET > Tone Control/TBW
+0020 See p� 20� TX > SSB >
+Send/read TX bandwidth for mid
+0021 See p� 20� TX > SSB >
+Send/read TX bandwidth for narrow
+0022 See p� 20� TX > SSB-D >
+Send/read TX bandwidth
+0023 00 ~ 10 TX > AM >
+Send/read TX Tone (Bass) level
+(00=–5 ~ 10=+5)
+0024 00 ~ 10 TX > AM >
+Send/read TX Tone (Treble) level
+(00=–5 ~ 10=+5)
+0025 00 ~ 10 TX > FM >
+Send/read TX Tone (Bass) level
+(00=–5 ~ 10=+5)
+0026 00 ~ 10 TX > FM >
+Send/read TX Tone (Treble) level
+(00=–5 ~ 10=+5)
+0027 00 ~ 10 TX > DV >
+Send/read TX Tone (Bass) level
+(00=–5 ~ 10=+5)
+0028 00 ~ 10 TX > DV >
+Send/read TX Tone (Treble) level
+(00=–5 ~ 10=+5)
+SET > Function
+0029 0000 ~ 0255 Send/read the Beep Level setting
+(0000=Minimum ~ 0255=Maximum)
+0030 00/01 Send/read the Beep Level Limit 
+setting
+(00=OFF, 01=ON)
+0031 00/01 Send/read the Beep (Confirmation) 
+setting
+(00=OFF, 01=ON)
+0032 00/01 Send/read the Home CH Beep 
+setting
+(00=OFF, 01=ON)
+0033 00 ~ 03 Send/read the Band Edge Beep 
+setting
+( 00=OFF, 01=ON (Default),  
+ 02=ON (User),  
+03=ON (User) & TX Limit)
+0034 00 ~ 04 Send/read the Auto Power OFF 
+setting
+( 00=OFF, 01=30 min, 02=60 min, 
+03=90 min, 04=120 min)
+0035 00 ~ 03 Send/read the Power Save setting
+( 00=OFF, 01=Auto (Short),  
+02=Auto (Middle), 03=Auto (Long))
+0036 00 ~ 03 Send/read the Max TX Power 
+(Battery Pack) setting
+( 00=0�5 W, 01=1 W, 02=2�5 W,  
+03=5 W)
+0037 00 ~ 04 Send/read the Max TX Power (DC 
+13�8V) setting
+( 00=0�5 W, 01=1 W, 02=2�5 W,  
+03=5 W, 04=10 W)
+0038 00 ~ 05 Send/read the TX Delay (HF) setting
+( 00=OFF, 01=10 ms, 02=15 ms, 
+03=20 ms, 04=25 ms, 05=30 ms)
+6
+REMOTE CONTROL
+Cmd� Sub cmd� Data Description
+1A* 05 SET > Function
+0039 00 ~ 05 Send/read the TX Delay (50 MHz) 
+setting
+( 00=OFF, 01=10 ms, 02=15 ms, 
+03=20 ms, 04=25 ms, 05=30 ms)
+0041 00 ~ 05 Send/read the TX Delay (144 MHz) 
+setting
+( 00=OFF, 01=10 ms, 02=15 ms, 
+03=20 ms, 04=25 ms, 05=30 ms)
+0042 00 ~ 05 Send/read the TX Delay (430 MHz) 
+setting
+( 00=OFF, 01=10 ms, 02=15 ms, 
+03=20 ms, 04=25 ms, 05=30 ms)
+0043 00 ~ 05 Send/read the Time-Out Timer 
+setting
+( 00=OFF, 01=3 min, 02=5 min, 
+03=10 min, 04=20 min, 05=30 min)
+0044 00/01 Send/read the PTT Lock setting
+( 00=OFF, 01=ON)
+0045 00/01 SPLIT >
+Send/read the Quick SPLIT setting
+( 00=OFF, 01=ON)
+0046 See p� 20� SPLIT > 
+Send/read the SPLIT Offset setting
+0047 00/01 SPLIT >
+Send/read the SPLIT LOCK setting
+( 00=OFF, 01=ON)
+0048 00/01 Tuner >
+Send/read the PTT Start setting
+( 00=OFF, 01=ON)
+0049 00 ~ 02 Send/read the Auto Repeater setting
+( 00=OFF, 01=ON (DUP),  
+02=ON (DUP,TONE))
+0050 00 ~ 02 Send/read the RTTY Mark 
+Frequency setting
+( 00=1275 Hz, 01=1615 Hz,  
+02=2125 Hz)
+0051 00 ~ 02 Send/read the RTTY Shift Width 
+setting
+( 00=170 Hz, 01=200 Hz, 02=425 Hz)
+0052 00/01 Send/read the RTTY Keying Polarity 
+setting
+( 00=Normal, 01=Reverse)
+0053 00/01 SPEECH >
+Send/read the SPEECH Language 
+setting
+( 00=Japanese, 01=English)
+0054 00/01 SPEECH >
+Send/read the Alphabet setting
+( 00=Normal, 01=Phonetic Code)
+0055 00/01 SPEECH >
+Send/read the SPEECH Speed setting
+( 00=Slow, 01=Fast)
+0056 00 ~ 02 SPEECH >
+Send/read the RX Call Sign 
+SPEECH setting
+( 00=OFF, 01=ON (Kerchunk),  
+02=ON (All))
+Cmd� Sub cmd� Data Description
+1A* 05 SET > Function
+0057 00/01 SPEECH >
+Send/read the RX>CS SPEECH setting
+( 00=OFF, 01=ON)
+0058 00/01 SPEECH >
+Send/read the MIC Up/Down 
+SPEECH setting
+( 00=OFF, 01=ON)
+0059 00/01 SPEECH >
+Send/read the S-Level SPEECH setting
+( 00=OFF, 01=ON)
+0060 00/01 SPEECH >
+Send/read the MODE SPEECH setting
+( 00=OFF, 01=ON)
+0061 0000 ~ 0255 SPEECH >
+Send/read the SPEECH Level setting
+( 0000=0% ~ 0255=100%)
+0062 00/01 Send/read the [SPEECH/LOCK] 
+Switch setting
+( 00=SPEECH/LOCK,  
+01=LOCK/SPEECH)
+0063 00/01 Send/read the Lock Function setting
+( 00=MAIN DIAL, 01=PANEL)
+0064 00/01 Send/read the Memo Pad Quantity 
+setting
+( 00=5 ch, 01=10 ch)
+0065 00 ~ 02 Send/read the MAIN DIAL Auto TS 
+setting
+(00=OFF, 01=Low, 02=High)
+0066 00/01 Send/read the MIC Up/Down Speed 
+setting
+(00=Slow, 01=Fast)
+0067 00 ~ 02 Send/read the [NOTCH] Switch 
+(SSB) setting
+(00=Auto, 01=Manual, 02=Auto/Manual)
+0068 00 ~ 02 Send/read the [NOTCH] Switch 
+(AM) setting
+(00=Auto, 01=Manual, 02=Auto/Manual)
+0069 00/01 Send/read the SSB/CW 
+Synchronous Tuning setting
+(00=OFF, 01=ON)
+0070 00/01 Send/read the CW Normal Side setting
+(00=LSB, 01=USB)
+0071 00/01 Send/read the Charging (Power ON) 
+setting
+(00=OFF, 01=ON)
+0072 00/01 Send/read the USB Power Input 
+(Phone, Tablet, PC) setting
+(00=OFF, 01=ON)
+0073 00/01 Send/read the Power OFF Setting 
+(for Remote Control) setting
+( 00=Shutdown only, 
+01=Standby/Shutdown)
+SET > Function > Remote MIC Key
+0074 See p� 21� Send/read the [A] setting
+0075 See p� 21� Send/read the [B] setting
+0076 See p� 21� Send/read the [] setting
+0077 See p� 21� Send/read the [] setting
+Remote control (CI-V) information
+ DCommand table
+7
+REMOTE CONTROL
+Cmd� Sub cmd� Data Description
+1A* 05 SET > Function > Remote MIC Key
+0078 00/01 Send/read the Mode Select (SSB) 
+setting
+(00=OFF, 01=ON)
+0079 00/01 Send/read the Mode Select (CW) 
+setting
+(00=OFF, 01=ON)
+0080 00/01 Send/read the Mode Select (RTTY) 
+setting
+(00=OFF, 01=ON)
+0081 00/01 Send/read the Mode Select (AM) 
+setting
+(00=OFF, 01=ON)
+0082 00/01 Send/read the Mode Select (FM) 
+setting
+(00=OFF, 01=ON)
+0083 00/01 Send/read the Mode Select (DV) 
+setting
+(00=OFF, 01=ON)
+0084 00/01 Send/read the Mode Select (WFM) 
+setting
+(00=OFF, 01=ON)
+SET > Function
+0085 00/01 Send/read the Keyboard Type setting
+(00=Ten-key, 01=Full Keyboard)
+0086 00 ~ 02 Send/read the Full Keyboard Layout 
+setting
+( 00=English, 01=German,  
+02=French)
+0087 00/01 Send/read the Screen Capture 
+[POWER] Switch setting
+(00=OFF, 01=ON)
+0088 00/01 Send/read the Screen Capture File 
+Type setting
+(00=PNG, 01=BMP)
+0089 0000 ~ 0511 Send/read the REF Adjust setting
+(0000=0% ~ 0511=100%)
+SET > DV Set
+0090 00 ~ 03 Send/read the Standby Beep setting
+( 00=OFF, 01=ON,  
+02=ON (to me:High Tone),  
+03=ON (to me:Alarm/High Tone))
+0091 00 ~ 03 Send/read the Auto Reply setting
+( 00=OFF, 01=ON, 02=Voice, 
+03=Position)
+0092 00/01 Send/read the DV Data TX setting
+(00=PTT, 01=Auto)
+0093 00/01 DV Fast Data > 
+Send/read the Fast Data setting
+(00=OFF, 01=ON)
+0094 00/01 DV Fast Data > 
+Send/read the GPS Data Speed setting
+(00=Slow, 01=Fast)
+0095 00 ~ 10 DV Fast Data > 
+Send/read the TX Delay (PTT) setting
+(00=OFF, 01=1sec ~ 10=10sec)
+0096 00 ~ 02 Send/read the Digital Monitor setting
+(00=Auto, 01=Digital, 02=Analog)
+Cmd� Sub cmd� Data Description
+1A* 05 SET > DV Set
+0097 00/01 Send/read the Digital Repeater Set 
+setting
+(00=OFF, 01=ON)
+0098 00/01 Send/read the DV Auto Detect setting
+(00=OFF, 01=ON)
+0099 00/01 Send/read the RX Record (RPT) setting
+(00=ALL, 01=Latest Only)
+0100 00/01 Send/read the BK setting
+(00=OFF, 01=ON)
+0101 00/01 Send/read the EMR setting
+(00=OFF, 01=ON)
+0102 0000 ~ 0255 Send/read the EMR AF Level setting
+(0000=0% ~ 0255=100%)
+SET > QSO/RX Log
+0103 00/01 Send/read the QSO Log setting
+(00=OFF, 01=ON)
+0104 00/01 Send/read the RX History Log setting
+(00=OFF, 01=ON)
+0105 00 ~ 02 CSV Format > 
+Send/read the Separator/Decimal setting
+( 00=Separator is “ , ” and Decimal is “ � ,” 
+01=Separator is “ ; ” and Decimal is “ � ,” 
+02=Separator is “ ; ” and Decimal is “ , ”)
+0106 00 ~ 02 CSV Format > 
+Send/read the Date setting
+( 00=“yyyy/mm/dd,” 01=“mm/dd/yyyy,” 
+02=“dd/mm/yyyy”)
+SET > Connectors
+0107 00 ~ 02 Send/read the SP Jack Function setting
+( 00=Speaker, 01=Phone,  
+02=Phone (L+R))
+0108 00 ~ 30 Send/read the Phones Level setting
+(00=–15 ~ 30=+15)
+0109 00/01 USB AF/IF Output > 
+Send/read the Output Select setting
+(00=AF, 01=IF)
+0110 0000 ~ 0255 USB AF/IF Output > 
+Send/read the AF Output Level 
+setting
+(0000=0% ~ 0255=100%)
+0111 00/01 USB AF/IF Output > 
+Send/read the AF SQL setting
+(00=OFF (Open), 01=ON)
+0112 00/01 USB AF/IF Output >  
+Send/read the AF Beep/Speech���
+Output setting
+(00=OFF, 01=ON)
+0113 0000 ~ 0255 USB AF/IF Output > 
+Send/read the IF Output Level 
+setting
+(0000=0% ~ 0255=100%)
+0114 00/01 WLAN AF/IF Output > 
+Send/read the Output Select setting
+(00=AF, 01=IF)
+0115 00/01 WLAN AF/IF Output > 
+Send/read the AF SQL setting
+(00=OFF (Open), 01=ON)
+Remote control (CI-V) information
+ DCommand table
+REMOTE CONTROL
+Remote control (CI-V) information
+DCommand table
+Cmd� Sub cmd�
+Data
+Description
+1A* 05 SET > Connectors
+0116 0000 ~ 0255 MOD Input > 
+Send/read the USB MOD Level setting
+(0000=0% ~ 0255=100%)
+0117 0000 ~ 0255 MOD Input > 
+Send/read the WLAN MOD Level setting
+(0000=0% ~ 0255=100%)
+0118 00 ~ 03
+0119 00 ~ 03
+0120 00/01
+0121 00/01
+0123 00/01
+0124 00/01
+0125 00 ~ 04
+0126 00 ~ 04
+0127 00 ~ 04
+0128 00/01
+MOD Input > 
+Send/read the DATA OFF MOD setting
+( 00=MIC, 01=USB,  
+02=MIC, USB, 03=WLAN)
+MOD Input > 
+Send/read the DATA MOD setting
+( 00=MIC, 01=USB,  
+02=MIC, USB, 03=WLAN)
+SEND Output > 
+Send/read the HF setting
+(00=OFF, 01=ON)
+SEND Output > 
+Send/read the 50M setting
+(00=OFF, 01=ON)
+SEND Output > 
+Send/read the 144M setting
+(00=OFF, 01=ON)
+SEND Output > 
+Send/read the 430M setting
+(00=OFF, 01=ON)
+USB SEND/Keying > 
+Send/read the USB SEND setting
+( 00=OFF, 01=USB (A) DTR,  
+02=USB (A) RTS, 03=USB (B) DTR,  
+04=USB (B) RTS)
+LYou cannot select the terminal 
+which is already selected in the 
+“USB Keying (CW)” or “USB 
+Keying (RTTY)” item�
+USB SEND/Keying > 
+Send/read the USB Keying (CW) 
+setting
+( 00=OFF, 01=USB (A) DTR,  
+02=USB (A) RTS, 03=USB (B) DTR,  
+04=USB (B) RTS)
+LYou cannot select the terminal 
+which is already selected in the 
+“USB SEND” or “USB Keying 
+(RTTY)” item�
+USB SEND/Keying > 
+Send/read the USB Keying (RTTY) 
+setting
+( 00=OFF, 01=USB (A) DTR,  
+02=USB (A) RTS, 03=USB (B) DTR,  
+04=USB (B) RTS)
+LYou cannot select the terminal 
+which is already selected in the 
+“USB SEND” or “USB Keying 
+(CW)” item�
+External Keypad > 
+Send/read the VOICE setting
+(00=OFF, 01=ON)
+Cmd� Sub cmd�
+Data
+1A* 05 SET > Connectors
+0129 00/01
+0130 00/01
+0131 00/01
+0132 00/01
+0133 00 ~ 03
+0134 00/01
+0135 00/01
+Description
+External Keypad > 
+Send/read the KEYER setting
+(00=OFF, 01=ON)
+External Keypad > 
+Send/read the RTTY setting
+(00=OFF, 01=ON)
+CI-V > 
+Send/read the CI-V Transceive 
+setting
+(00=OFF, 01=ON)
+CI-V > 
+Send/read the CI-V USB Echo Back 
+setting
+(00=OFF, 01=ON)
+USB (B) Function > 
+Send/read the USB (B) Function 
+setting
+( 00=OFF, 01=RTTY Decode,  
+02=DV Data, 03=Weather)
+USB (B) Function > 
+Send/read the GPS Out setting
+(00=OFF, 01=ON)
+LIt is valid when “USB (B) 
+Function” is set to “OFF” or “DV 
+Data�”
+Send/read the MIC Jack 8V Output 
+setting
+(00=OFF, 01=ON)
+SET > Display
+0136 0000 ~ 0255 Send/read the LCD Backlight setting
+(0000=0% ~ 0255=100%)
+0137 00/01
+Send/read the LCD Backlight Auto 
+Adjust setting
+(00=OFF, 01=ON)
+0138 00 ~ 06
+0139 00 ~ 06
+0140 00/01
+0141 00/01
+0142 00/01
+0143 00/01
+0144 00/01
+Send/read the Screen Saver 
+(Battery Pack) setting
+( 00=OFF, 01=1min, 02=2min, 
+03=5min, 04=15min, 05=30min,  
+06=60min)
+Send/read the Screen Saver (DC 
+13�8 V) setting
+( 00=OFF, 01=1min, 02=2min, 
+03=5min, 04=15min, 05=30min,  
+06=60min)
+Send/read the Screen OFF 
+[POWER] Switch setting
+(00=OFF, 01=ON)
+Send/read the RX LED setting
+(00=OFF, 01=ON)
+Send/read the Meter Peak Hold setting
+(00=OFF, 01=ON)
+Send/read the Memory Name setting
+(00=OFF, 01=ON)
+Send/read the Group Name Popup 
+setting
+(00=OFF, 01=ON)
+8
+9
+REMOTE CONTROL
+Cmd� Sub cmd� Data Description
+1A* 05 SET > Display
+0145 00 ~ 03 Send/read the RX Call Sign Display 
+setting
+( 00=OFF, 01=Normal,  
+02=RX Hold, 03=Hold)
+0146 00/01 Send/read the RX Position Indicator 
+setting
+(00=OFF, 01=ON)
+0147 00/01 Send/read the RX Position Display 
+setting
+(00=OFF, 01=ON)
+0148 00 ~ 04 Send/read the RX Position Display 
+Timer setting
+( 00=5sec, 01=10sec, 02=15sec, 
+03=30sec, 04=Hold)
+0149 00/01 Send/read the Reply Position 
+Display setting
+(00=OFF, 01=ON)
+0150 00/01 Send/read the RX Picture Indicator 
+setting
+(00=OFF, 01=ON)
+0151 00/01 Send/read the DV RX Backlight setting
+(00=OFF, 01=ON)
+0152 00 ~ 02 Send/read the TX Call Sign Display 
+setting
+( 00=OFF, 01=Your Call Sign,  
+02=My Call Sign)
+0153 00/01 Send/read the Scroll Speed setting
+(00=Slow, 01=Fast)
+0154 00/01 Send/read the Opening Message setting
+(00=OFF, 01=ON)
+0155 00/01 Send/read the Power ON Check setting
+(00=OFF, 01=ON)
+0156 00 ~ 02 Display Unit > 
+Send/read the Latitude/Longitude 
+setting
+(00=ddd°mm.mm′,01=ddd°mm′ss″,
+02=ddd�dddd°)
+0157 00/01 Display Unit > 
+Send/read the Altitude/Distance setting
+(00=m, 01=ft/mi)
+0158 00 ~ 02 Display Unit > 
+Send/read the Speed setting
+(00=km/h, 01=mph, 02=knots)
+0159 00/01 Display Unit > 
+Send/read the Temperature setting
+(00=°C, 01=°F)
+0160 00 ~ 03 Display Unit > 
+Send/read the Barometric setting
+(00=hPa, 01=mb, 02=mmHg, 03=inHg)
+0161 00/01 Display Unit > 
+Send/read the Rainfall setting
+(00=mm, 01=inch)
+0162 00 ~ 03 Display Unit > 
+Send/read the Wind Speed setting
+(00=m/s, 01=km/h, 02=mph, 03=knots)
+0163 00/01 Send/read the Display Language setting
+(00=English, 01=Japanese)
+0164 00/01 Send/read the System Language setting
+(00=English, 01=Japanese)
+Cmd� Sub cmd� Data Description
+1A* 05 SET > Time Set
+0165 20200101 ~  
+20991231
+Date/Time > 
+Send/read the Date setting
+( 20200101=2020/1/1~  
+20991231=2099/12/31)
+0166 0000 ~ 2359 Date/Time > 
+Send/read the Time setting
+(0000=00:00 ~ 2359=23:59)
+0167 00/01 Date/Time > 
+Send/read the NTP Function setting
+(00=OFF, 01=ON)
+0168 See p� 19� Date/Time > 
+Send/read the NTP Server Address 
+setting
+(Up to 64 characters)
+0169 00/01 Date/Time > 
+Send/read the GPS Time Correct 
+setting
+(00=OFF, 01=Auto)
+0170 See p� 21� Send/read the UTC Offset setting
+SET > SD Card
+0171 00 ~ 02 Import/Export > CSV Format > 
+Send/read the Separator/Decimal 
+setting
+( 00=Separator is “ , ” and Decimal is “ � ,” 
+01=Separator is “ ; ” and Decimal is “ � ,” 
+02=Separator is “ ; ” and Decimal is “ , ”)
+0172 00 ~ 02 Import/Export > CSV Format > 
+Send/read the Date setting
+( 00=“yyyy/mm/dd,” 01=“mm/dd/yyyy,” 
+02=“dd/mm/yyyy”)
+SCOPE > SCOPE SET
+0173 00/01 Send/read the Scope during Tx 
+(CENTER Type) setting
+(00=OFF, 01=ON)
+0174 00 ~ 02 Send/read the Max Hold setting
+( 00=OFF, 01=10s Hold, 02=ON)
+0175 00 ~ 02 Send/read the CENTER Type 
+Display setting
+( 00=Filter Center,  
+01=Carrier Point Center,  
+02=Carrier Point Center (Abs� Freq�))
+0176 00/01 Send/read the Marker Position (FIX 
+Type/SCROLL Type) setting
+(00=Filter Center, 01=Carrier Point)
+0177 00/01 Send/read the VBW setting
+(00=Narrow, 01=Wide)
+0178 00 ~ 03 Send/read the Averaging setting
+(00=OFF, 01=2, 02=3, 03=4)
+0179 00/01 Send/read the Waveform Type setting
+(00=Fill, 01=Fill+Line)
+0180 See p� 21� Send/read the Waveform Color 
+(Current) setting
+0181 See p� 21� Send/read the Waveform Color 
+(Line) setting
+0182 See p� 21� Send/read the Waveform Color 
+(Max Hold) setting
+0183 00/01 Send/read the Waterfall Display setting
+(00=OFF, 01=ON)
+Remote control (CI-V) information
+ DCommand table
+10
+REMOTE CONTROL
+Cmd� Sub cmd� Data Description
+1A* 05 SCOPE > SCOPE SET
+0184 00 ~ 02 Send/read the Waterfall Speed setting
+(00=Slow, 01=Mid, 02=Fast)
+0185 00 ~ 02 Send/read the Waterfall Size 
+(Expand Screen) setting
+(00=Small, 01=Mid, 02=Large)
+0186 00 ~ 07 Send/read the Waterfall Peak Color 
+Level setting
+(00=Grid1 ~ 07=Grid8)
+0187 00/01 Send/read the Waterfall Marker 
+Auto-hide setting
+(00=OFF, 01=ON)
+0188 See p� 21� FIX Edges > 0�03 - 1�60 > 
+Send/read the No�1 setting
+0189 See p� 21� FIX Edges > 0�03 - 1�60 > 
+Send/read the No�2 setting
+0190 See p� 21� FIX Edges > 0�03 - 1�60 > 
+Send/read the No�3 setting
+0191 See p� 21� FIX Edges > 1�60 - 2�00 > 
+Send/read the No�1 setting
+0192 See p� 21� FIX Edges > 1�60 - 2�00 > 
+Send/read the No�2 setting
+0193 See p� 21� FIX Edges > 1�60 - 2�00 > 
+Send/read the No�3 setting
+0194 See p� 21� FIX Edges > 2�00 - 6�00 > 
+Send/read the No�1 setting
+0195 See p� 21� FIX Edges > 2�00 - 6�00 > 
+Send/read the No�2 setting
+0196 See p� 21� FIX Edges > 2�00 - 6�00 > 
+Send/read the No�3 setting
+0197 See p� 21� FIX Edges > 6�00 - 8�00 > 
+Send/read the No�1 setting
+0198 See p� 21� FIX Edges > 6�00 - 8�00 > 
+Send/read the No�2 setting
+0199 See p� 21� FIX Edges > 6�00 - 8�00 > 
+Send/read the No�3 setting
+0200 See p� 21� FIX Edges > 8�00 - 11�00 > 
+Send/read the No�1 setting
+0201 See p� 21� FIX Edges > 8�00 - 11�00 > 
+Send/read the No�2 setting
+0202 See p� 21� FIX Edges > 8�00 - 11�00 > 
+Send/read the No�3 setting
+0203 See p� 21� FIX Edges > 11�00 - 15�00 > 
+Send/read the No�1 setting
+0204 See p� 21� FIX Edges > 11�00 - 15�00 > 
+Send/read the No�2 setting
+0205 See p� 21� FIX Edges > 11�00 - 15�00 > 
+Send/read the No�3 setting
+0206 See p� 21� FIX Edges > 15�00 - 20�00 > 
+Send/read the No�1 setting
+0207 See p� 21� FIX Edges > 15�00 - 20�00 > 
+Send/read the No�2 setting
+0208 See p� 21� FIX Edges > 15�00 - 20�00 > 
+Send/read the No�3 setting
+0209 See p� 21� FIX Edges > 20�00 - 22�00 > 
+Send/read the No�1 setting
+0210 See p� 21� FIX Edges > 20�00 - 22�00 > 
+Send/read the No�2 setting
+Cmd� Sub cmd� Data Description
+1A* 05 SCOPE > SCOPE SET
+0211 See p� 21� FIX Edges > 20�00 - 22�00 > 
+Send/read the No�3 setting
+0212 See p� 21� FIX Edges > 22�00 - 26�00 > 
+Send/read the No�1 setting
+0213 See p� 21� FIX Edges > 22�00 - 26�00 > 
+Send/read the No�2 setting
+0214 See p� 21� FIX Edges > 22�00 - 26�00 > 
+Send/read the No�3 setting
+0215 See p� 21� FIX Edges > 26�00 - 30�00 > 
+Send/read the No�1 setting
+0216 See p� 21� FIX Edges > 26�00 - 30�00 > 
+Send/read the No�2 setting
+0217 See p� 21� FIX Edges > 26�00 - 30�00 > 
+Send/read the No�3 setting
+0218 See p� 21� FIX Edges > 30�00 - 45�00 > 
+Send/read the No�1 setting
+0219 See p� 21� FIX Edges > 30�00 - 45�00 > 
+Send/read the No�2 setting
+0220 See p� 21� FIX Edges > 30�00 - 45�00 > 
+Send/read the No�3 setting
+0221 See p� 21� FIX Edges > 45�00 - 60�00 > 
+Send/read the No�1 setting
+0222 See p� 21� FIX Edges > 45�00 - 60�00 > 
+Send/read the No�2 setting
+0223 See p� 21� FIX Edges > 45�00 - 60�00 > 
+Send/read the No�3 setting
+0224 See p� 21� FIX Edges > 60�00 - 74�80 > 
+Send/read the No�1 setting
+0225 See p� 21� FIX Edges > 60�00 - 74�80 > 
+Send/read the No�2 setting
+0226 See p� 21� FIX Edges > 60�00 - 74�80 > 
+Send/read the No�3 setting
+0227 See p� 21� FIX Edges > 74�80 - 108�00 > 
+Send/read the No�1 setting
+0228 See p� 21� FIX Edges > 74�80 - 108�00 > 
+Send/read the No�2 setting
+0229 See p� 21� FIX Edges > 74�80 - 108�00 > 
+Send/read the No�3 setting
+0230 See p� 21� FIX Edges > 108�00 - 137�00 > 
+Send/read the No�1 setting
+0231 See p� 21� FIX Edges > 108�00 - 137�00 > 
+Send/read the No�2 setting
+0232 See p� 21� FIX Edges > 108�00 - 137�00 > 
+Send/read the No�3 setting
+0233 See p� 21� FIX Edges > 137�00 - 200�00 > 
+Send/read the No�1 setting
+0234 See p� 21� FIX Edges > 137�00 - 200�00 > 
+Send/read the No�2 setting
+0235 See p� 21� FIX Edges > 137�00 - 200�00 > 
+Send/read the No�3 setting
+0236 See p� 21� FIX Edges > 400�00 - 470�00 > 
+Send/read the No�1 setting
+0237 See p� 21� FIX Edges > 400�00 - 470�00 > 
+Send/read the No�2 setting
+0238 See p� 21� FIX Edges > 400�00 - 470�00 > 
+Send/read the No�3 setting
+Remote control (CI-V) information
+ DCommand table
+11
+REMOTE CONTROL
+Cmd� Sub cmd� Data Description
+1A* 05 AUDIO > AUDIO SCOPE SET
+0239 00/01 Send/read the FFT Scope 
+Waveform Type setting
+(00=Line, 01=Fill)
+0240 See p� 21� Send/read the FFT Scope 
+Waveform Color setting
+0241 00/01 Send/read the FFT Scope Waterfall 
+Display setting
+(00=OFF, 01=ON)
+0242 See p� 21� Send/read the Oscilloscope 
+Waveform Color setting
+VOICE
+0243 0000 ~ 0255 Send/read the TX LEVEL setting
+(0000=0% ~ 0255=100%)
+0244 00/01 VOICE TX SET >
+Send/read the Auto Monitor setting
+(00=OFF, 01=ON)
+0245 01 ~ 15 VOICE TX SET >
+Send/read the Repeat Time setting
+(01=1sec ~ 15=15sec)
+KEYER > KEYER 001
+0246 00 ~ 04 Send/read the Number Style setting
+(00=Normal,01=190→ANO, 
+02=190→ANT,03=90→NO, 
+04=90→NT)
+0247 01 ~ 08 Send/read the Count Up Trigger setting
+(01=M1 ~ 08=M8)
+0248 0001 ~ 9999 Send/read Present Number setting
+(0001=1 ~ 9999=9999)
+KEYER > CW-KEY SET
+0249 0000 ~ 0255 Send/read Side Tone Level setting
+(0000=0% ~ 0255=100%)
+0250 00/01 Send/read Side Tone Level Limit setting
+(00=OFF, 01=ON)
+0251 01 ~ 60 Send/read Keyer Repeat Time setting
+(01=1sec ~ 60=60sec)
+0252 28 ~ 45 Send/read Dot/Dash Ratio setting
+( 28=1:1:2�8 ~ 45=1:1:4�5  
+in 0�1 steps)
+0253 00 ~ 03 Send/read Rise Time setting
+( 00=2ms, 01=4ms,  
+02=6ms, 03=8ms)
+0254 00/01 Send/read Paddle Polarity setting
+(00=Normal, 01=Reverse)
+0255 00 ~ 02 Send/read Key Type setting
+(00=Straight, 01=Bug, 02=Paddle)
+0256 00 ~ 02 Send/read MIC Up/Down Keyer setting
+( 00=OFF, 01=ON (UP/DOWN),  
+02=ON (A/B))
+DECODE > RTTY DECODE SET
+0257 00 ~ 03 Send/read the FFT Scope Averaging 
+setting
+(00=OFF, 01=2, 02=3, 03=4)
+0258 See p� 21� Send/read the FFT Scope 
+Waveform Color setting
+0259 00/01 Send/read the Decode USOS setting
+(00=OFF, 01=ON)
+Cmd� Sub cmd� Data Description
+1A* 05 DECODE > RTTY DECODE SET
+0260 00/01 Send/read the Decode New Line 
+Code setting
+(00=CR,LF,CR+LF, 01=CR+LF)
+0261 00/01 Send/read the TX USOS setting
+(00=OFF, 01=ON)
+0262 See p� 21� Send/read the Font Color (Receive) 
+setting
+0263 See p� 21� Send/read the Font Color (Transmit) 
+setting
+DECODE > RTTY DECODE LOG
+0264 00/01 Send/read the Decode Log setting
+(00=OFF, 01=ON)
+0265 00/01 Log Set > 
+Send/read the File Type setting
+(00=Text, 01=HTML)
+0266 00/01 Log Set > 
+Send/read the Time Stamp setting
+(00=OFF, 01=ON)
+0267 00/01 Log Set > 
+Send/read the Time Stamp (Time) setting
+(00=Local, 01=UTC)
+0268 00/01 Log Set > 
+Send/read the Time Stamp 
+(Frequency) setting
+(00=OFF, 01=ON)
+RECORD > Recorder Set
+0269 00/01 Send/read the TX REC Audio setting
+(00=Direct, 01= Monitor)
+0270 00/01 Send/read the RX REC Condition 
+setting
+(00=Always, 01=Squelch Auto)
+0271 00/01 Send/read the File Split setting
+(00=OFF, 01=ON)
+0272 00/01 Send/read the PTT Auto REC setting
+(00=OFF, 01=ON)
+0273 00 ~ 03 Send/read the PRE-REC for PTT 
+Auto REC setting
+( 00=OFF, 01=5sec,  
+02=10sec, 03=15sec)
+RECORD > Player Set
+0274 00 ~ 03 Send/read the Skip Time setting
+( 00=3sec, 01=5sec,  
+02=10sec, 03=30sec)
+SCAN > SCAN SET
+0275 00/01 Send/read the SCAN Speed setting
+(00=Slow, 01=Fast)
+0276 00/01 Send/read the SCAN Resume setting
+(00=OFF, 01=ON)
+0277 00 ~ 10 Send/read the Pause Timer setting
+( 00=2sec ~ 09=20sec in 2 seconds, 
+10=HOLD)
+0278 00 ~ 06 Send/read the Resume Timer setting
+(00=0sec ~ 05=5sec, 06=HOLD)
+0279 00 ~ 04 Send/read the Temporary Skip 
+Timer setting
+( 00=5min, 01=10min, 02=15min, 
+03=While Scanning,  
+04=While Powered ON)
+Remote control (CI-V) information
+ DCommand table
+12
+REMOTE CONTROL
+Cmd� Sub cmd� Data Description
+1A* 05 SCAN > SCAN SET
+0280 00/01 Send/read the MAIN DIAL Operation 
+(SCAN) setting
+(00=OFF, 01=Up/Down)
+GPS
+0281 00 ~ 02 GPS Set > 
+Send/read the GPS Select setting
+(00=OFF, 01=ON, 02=Manual)
+0282 00/01 GPS Set > GPS Option > 
+Send/read the SBAS setting
+(00=OFF, 01=ON)
+0283 00/01 GPS Set > GPS Option > 
+Send/read the GLONASS setting
+(00=OFF, 01=ON)
+0284 00 ~ 05 GPS Set > GPS Option > 
+Send/read the Power Save setting
+( 00=OFF, 01=1min, 02=2min, 
+03=4min, 04=8min, 05=Auto)
+0285 00/01 GPS Set > GPS Option > 
+Send/read the Satellite Information 
+Out setting
+( 00=GPS/QZSS/GLONASS,  
+01=GPS Only)
+0286 See p� 22� GPS Set > 
+Send/read the Manual Position setting
+0287 00 ~ 02 Send/read the GPS TX Mode setting
+(00=OFF, 01=D-PRS, 02=NMEA)
+GPS > GPS TX Mode > D-PRS
+0288 See p� 19� Send/read the Unproto Address setting
+(Up to 56 characters)
+0289 00 ~ 03 Send/read the TX Format setting
+( 00=Position, 01=Object,  
+02=Item, 03=Weather)
+GPS > GPS TX Mode > D-PRS > TX Format > Position
+0290 00 ~ 03 Send/read the Symbol setting
+( 00=No�1, 01=No�2,  
+02=No�3, 03=No�4)
+0291 See pp� 19 
+and 22�
+Send/read the Symbol No�1 setting
+(2 characters)
+0292 See pp� 19 
+and 22�
+Send/read the Symbol No�2 setting
+(2 characters)
+0293 See pp� 19 
+and 22�
+Send/read the Symbol No�3 setting
+(2 characters)
+0294 See pp� 19 
+and 22�
+Send/read the Symbol No�4 setting
+(2 characters)
+0295 00 ~ 42 Send/read the SSID setting
+( 00= - - -, 01=(- 0),  
+02= -1 ~ 16= -15,  
+17= -A ~ 42=-Z)
+0296 00 ~ 03 Send/read the Comment setting
+(00=No�1, 01=No�2, 02=No�3, 03=No�4)
+0297 See p� 19� Send/read the Comment No�1 setting
+(Up to 43 characters)
+0298 See p� 19� Send/read the Comment No�2 setting
+(Up to 43 characters)
+0299 See p� 19� Send/read the Comment No�3 setting
+(Up to 43 characters)
+0300 See p� 19� Send/read the Comment No�4 setting
+(Up to 43 characters)
+Cmd� Sub cmd� Data Description
+1A* 05 GPS > GPS TX Mode > D-PRS > TX Format > Position
+0301 00 ~ 02 Send/read the Time Stamp setting
+(00=OFF, 01=DHM, 02=HMS)
+0302 00/01 Send/read the Altitude setting
+(00=OFF, 01=ON)
+0303 00 ~ 02 Send/read the Data Extension setting
+( 00=OFF, 01=Course/Speed,  
+02=Power/Height/Gain/Directivity)
+0304 00 ~ 09 Send/read the Power setting
+( 00=0W, 01=1W, 02=4W, 03=9W,  
+04=16W, 05=25W, 06=36W, 
+07=49W, 08=64W, 09=81W)
+0305 00 ~ 09 Send/read the Height setting
+( 00=3m, 01=6m, 02=12m, 03=24m,  
+04=49m, 05=98m, 06=195m, 
+07=390m, 08=780m, 09=1561m)
+0306 00 ~ 09 Send/read the Gain setting
+(00=0dB ~ 09=9dB)
+0307 00 ~ 08 Send/read the Directivity setting
+( 00=Omni, 01=45ºNE, 02=90ºE, 
+03=135ºSE, 04=180ºS, 05=225ºSW,  
+06=270ºW, 07=315ºNW, 08=360ºN)
+GPS > GPS TX Mode > D-PRS > TX Format > Object
+0308 See p� 19� Send/read the Object Name setting 
+(Up to 9 characters)
+0309 00/01 Send/read the Data Type setting
+(00=Live Object, 01=Kill Object)
+0310 See pp� 19 
+and 22�
+Send/read the Symbol setting 
+(2 characters)
+0311 See p� 19� Send/read the Comment setting
+(Up to 43 characters)
+0312 See p� 22� Send/read the Position setting
+0313 00 ~ 02 Send/read the Data Extension setting
+( 00=OFF, 01=Course/Speed,  
+02=Power/Height/Gain/Directivity)
+0314 000 ~ 360 Send/read the Course setting
+(000=0º ~ 360=360º)
+0315 0000 ~ 1850 Send/read the Speed setting
+(0000=0km/h ~ 1850=1850km/h)
+0316 00 ~ 09 Send/read the Power setting
+( 00=0W, 01=1W, 02=4W, 03=9W,  
+04=16W, 05=25W, 06=36W, 
+07=49W, 08=64W, 09=81W)
+0317 00 ~ 09 Send/read the Height setting
+( 00=3m, 01=6m, 02=12m, 03=24m,  
+04=49m, 05=98m, 06=195m, 
+07=390m, 08=780m, 09=1561m)
+0318 00 ~ 09 Send/read the Gain setting
+(00=0dB ~ 09=9dB)
+0319 00 ~ 08 Send/read the Directivity setting
+( 00=Omni, 01=45ºNE, 02=90ºE, 
+03=135ºSE, 04=180ºS, 05=225ºSW,  
+06=270ºW, 07=315ºNW, 08=360ºN)
+0320 00 ~ 42 Send/read the SSID setting
+( 00= - - -, 01=(- 0),  
+02= -1 ~ 16= -15,  
+17= -A ~ 42= -Z)
+0321 00/01 Send/read the Time Stamp setting
+(00=DHM, 01=HMS)
+Remote control (CI-V) information
+ DCommand table
+13
+REMOTE CONTROL
+Cmd� Sub cmd� Data Description
+1A* 05 GPS > GPS TX Mode > D-PRS > TX Format > Item
+0322 See p� 19� Send/read the Item Name setting 
+(Up to 9 characters)
+0323 00/01 Send/read the Data Type setting
+(00=Live Item, 01=Killed Item)
+0324 See pp� 19 
+and 22�
+Send/read the Symbol setting
+(2 characters)
+0325 See p� 19� Send/read the Comment setting
+(Up to 43 characters)
+0326 See p� 22� Send/read the Position setting
+0327 00 ~ 02 Send/read the Data Extension setting
+( 00=OFF, 01=Course/Speed,  
+02=Power/Height/Gain/Directivity)
+0328 000 ~ 360 Send/read the Course setting
+(000 ~ 360=0º ~ 360º)
+0329 0000 ~ 1850 Send/read the Speed setting
+( 0000=0km/h ~ 1850=1850km/h)
+0330 00 ~ 09 Send/read the Power setting
+( 00=0W, 01=1W, 02=4W, 03=9W,  
+04=16W, 05=25W, 06=36W, 
+07=49W, 08=64W, 09=81W)
+0331 00 ~ 09 Send/read the Height setting
+( 00=3m, 01=6m, 02=12m, 03=24m,  
+04=49m, 05=98m, 06=195m, 
+07=390m, 08=780m, 09=1561m)
+0332 00 ~ 09 Send/read the Gain setting
+(00=0dB ~ 09=9dB)
+0333 00 ~ 08 Send/read the Directivity setting
+( 00=Omni, 01=45ºNE, 02=90ºE, 
+03=135ºSE, 04=180ºS, 05=225ºSW,  
+06=270ºW, 07=315ºNW, 08=360ºN)
+0334 00 ~ 42 Send/read the SSID setting
+( 00= - - -, 01=(- 0),  
+02= -1 ~ 16= -15,  
+17= -A ~ 42= -Z)
+GPS > GPS TX Mode > D-PRS > TX Format > Weather
+0335 See pp� 19 
+and 22�
+Send/read the Symbol setting
+(2 characters)
+0336 00 ~ 42 Send/read the SSID setting
+( 00= - - -, 01=(- 0),  
+02= -1 ~ 16= -15,  
+17= -A ~ 42= -Z)
+0337 See p� 19� Send/read the Comment setting
+(Up to 43 characters)
+0338 00 ~ 02 Send/read the Time Stamp setting
+(00=OFF, 01=DHM, 02=HMS)
+GPS > GPS TX Mode > NMEA
+0339*6 00/01 GPS Sentence > 
+Send/read the RMC setting 
+(00=OFF, 01=ON)
+0340*6 00/01 GPS Sentence > 
+Send/read the GGA setting
+(00=OFF, 01=ON)
+0341*6 00/01 GPS Sentence > 
+Send/read the GLL setting
+(00=OFF, 01=ON)
+Cmd� Sub cmd� Data Description
+1A* 05 GPS > GPS TX Mode > NMEA
+0342*6 00/01 GPS Sentence > 
+Send/read the GSA setting
+(00=OFF, 01=ON)
+0343*6 00/01 GPS Sentence > 
+Send/read the VTG setting
+(00=OFF, 01=ON)
+0344*6 00/01 GPS Sentence > 
+Send/read the GSV setting
+(00=OFF, 01=ON)
+0345 See p� 19� Send/read the GPS Message setting
+(Up to 20 characters)
+GPS > GPS Alarm
+0346 See p� 22� Send/read the Alarm Area (Group) 
+setting
+0347 00 ~ 02 Send/read the Alarm Area (RX/
+Memory) setting
+( 00=Limited, 01=Extended,  
+02=Both)
+GPS > GPS Logger
+0348 00/01 Send/read the GPS Logger setting
+(00=OFF, 01=ON)
+0349 00 ~ 06 Send/read the Record Interval setting
+( 00=1sec, 01=5sec, 02=10sec,  
+03=30sec, 04=1min, 05=5min,  
+06=10min)
+0350 00/01 Record Sentence > 
+Send/read the RMC setting
+(00=OFF, 01=ON)
+0351 00/01 Record Sentence > 
+Send/read the GGA setting
+(00=OFF, 01=ON)
+0352 00/01 Record Sentence > 
+Send/read the VTG setting
+(00=OFF, 01=ON)
+0353 00/01 Record Sentence > 
+Send/read the GSA setting
+(00=OFF, 01=ON)
+GPS
+0354 00 ~ 06 Send/read the GPS Auto TX setting
+( 00=OFF, 01=30sec, 02=1min,  
+03=3min, 04=5min, 05=10min,  
+06=30min)
+DTMF > DTMF SET
+0355 00 ~ 03 Send/read the DTMF Speed setting
+( 00=100ms, 01=200ms,  
+02=300ms, 03=500ms)
+NB
+0356 0000 ~ 0255 Send/read the NB LEVEL setting
+(0000=0% ~ 0255=100%)
+0357 00 ~ 09 Send/read the NB DEPTH setting
+(00=1 ~ 09=10)
+0358 0000 ~ 0255 Send/read the NB WIDTH setting
+(0000=1 ~ 0255=100)
+Remote control (CI-V) information
+ DCommand table
+14
+REMOTE CONTROL
+Cmd� Sub cmd� Data Description
+1A* 05 VOX
+0359 00 ~ 20 Send/read the VOX DELAY setting
+( 00=0�0s ~ 20=2�0s in 0�1s steps)
+0360 00 ~ 03 Send/read the VOICE DELAY setting
+( 00=OFF, 01=SHORT,  
+02=MID, 03=LONG)
+CD
+0361 00/01 Send/read the Call Sign Display/
+Name Display setting
+( 00=Call Sign Display,  
+01=Name Display)
+GPS Position
+0362 00 ~ 02 Send/read the Compass Direction 
+setting
+( 00=Heading Up, 01=North Up,  
+02=South Up)
+SET > Function
+0363 00/01 Send/read the Battery Pack Select 
+setting
+(00=BP-272, 01=BP-307)
+0364 00/01 Send/read the Battery Pack 
+Confirmation setting
+(00=OFF, 01=ON)
+SET > Function > Tuner
+0365 00/01 Send/read the Tuner Select setting 
+(00=AH-705, 01=Others)
+0366 00/01 AH-705 >  
+Send/read the Tune Memory setting
+(00=OFF, 01=ON)
+SET > Function > Front Key Customize
+0367 See p� 21� Send/read the [VOX/BK-IN] setting
+0368 See p� 22� Send/read the [AUTOTUNE/RX>CS] 
+setting
+SCOPE > SCOPE SET
+0369 See p� 21� FIX Edges > 0�03 - 1�60 >  
+Send/read the No�4 setting
+0370 See p� 21� FIX Edges > 1�60 - 2�00 >  
+Send/read the No�4 setting
+0371 See p� 21� FIX Edges > 2�00 - 6�00 >  
+Send/read the No�4 setting
+0372 See p� 21� FIX Edges > 6�00 - 8�00 >  
+Send/read the No�4 setting
+0373 See p� 21� FIX Edges > 8�00 - 11�00 >  
+Send/read the No�4 setting
+0374 See p� 21� FIX Edges > 11�00 - 15�00 >  
+Send/read the No�4 setting
+0375 See p� 21� FIX Edges > 15�00 - 20�00 >  
+Send/read the No�4 setting
+0376 See p� 21� FIX Edges > 20�00 - 22�00 >  
+Send/read the No�4 setting
+0377 See p� 21� FIX Edges > 22�00 - 26�00 >  
+Send/read the No�4 setting
+0378 See p� 21� FIX Edges > 26�00 - 30�00 >  
+Send/read the No�4 setting
+Cmd� Sub cmd� Data Description
+1A* 05 SCOPE > SCOPE SET
+0379 See p� 21� FIX Edges > 30�00 - 45�00 >  
+Send/read the No�4 setting
+0380 See p� 21� FIX Edges > 45�00 - 60�00 >  
+Send/read the No�4 setting
+0381 See p� 21� FIX Edges > 60�00 - 74�80 >  
+Send/read the No�4 setting
+0382 See p� 21� FIX Edges > 74�80 - 108�00 >  
+Send/read the No�4 setting
+0383 See p� 21� FIX Edges > 108�00 - 137�00 >  
+Send/read the No�4 setting
+0384 See p� 21� FIX Edges > 137�00 - 200�00 >  
+Send/read the No�4 setting
+0385 See p� 21� FIX Edges > 400�00 - 470�00 >  
+Send/read the No�4 setting
+06 See p� 22� Send/read the DATA mode setting
+07 00/01 Send/read the NTP server access
+(00=Terminate, 01=Initiate)
+08*1 00 ~ 02 Read NTP server access result
+(00= Accessing, or have not 
+accessed after Power ON,
+ 01=Succeeded, 02=Failed)
+09*1 00/01 Read the OVF indicator status
+(00=OFF, 01=ON)
+0A 00 ~ 02 Send/read the Share Pictures 
+function status
+( 00=OFF, 01=ON, 02=ON (Repeat))
+ LWhile transmitting the picture 
+using the DV Fast Data function, 
+sends ON even if the status is set 
+to OFF�
+0B*1 00/01 Read the type of power supply 
+based on the current voltage
+( 00=External power supply,  
+01=Battery pack)
+0C 00/01 Send/read the PRT MONI setting
+(00=OFF, 01=ON)
+1B* 00 See p� 22� Send/read the Repeater tone frequency
+01 See p� 22� Send/read the TSQL tone frequency
+02 See p� 22� Send/read the DTCS code and polarity
+07 See p� 23� Send/read the CSQL code (DV mode)
+1C 00* 00/01 Send/read the transceiver’s status
+(00=RX, 01=TX)
+01* 00 ~ 02 Send/read the Antenna tuner's status
+(00=OFF, 01=ON, 02=Tune)
+02* 00/01 Send/read the Transmit frequency 
+monitor (XFC)
+(00=OFF, 01=ON)
+03*1 See p� 17� Read the transmit frequency
+1E 00*1 Read number of available TX 
+frequency band
+01*1 See p� 17� Read TX band edge frequencies
+02*1 Read number of user-set TX 
+frequency band
+03* See p� 17� Send/read the user-set TX band 
+edge frequencies
+Remote control (CI-V) information
+ DCommand table
+15
+REMOTE CONTROL
+Remote control (CI-V) information
+ DCommand table
+Cmd� Sub cmd� Data Description
+1F* 00 See p� 23� SET > My Station > 
+Send/read the My Call Sign setting
+01 See p� 23� CS > 
+Send/read the UR, R1, R2 setting
+02 See p� 23� SET > My Station > 
+Send/read the TX Message setting
+20 00 00* 00/01*7 Send/read the Auto DV RX Call 
+signs output
+(00=OFF, 01=ON)
+01 See p� 24� Output DV RX Call signs for 
+transceive
+02*1 See p� 24� Read Auto DV RX Call signs
+01 00* 00/01*7 Send/read the Auto DV RX message 
+output
+(00=OFF, 01=ON)
+01 See p� 24� Output DV RX message for 
+transceive
+02*1 See p� 24� Read Auto DV RX message
+02 00* 00/01*7 Send/read the Auto DV RX status 
+output
+(00=OFF, 01=ON)
+01 See p� 24� Output DV RX status for transceive
+02*1 See p� 24� Read Auto DV RX status
+03 00* 00/01 Send/read the Auto DV RX 
+GPS/D-PRS data output
+(00=OFF, 01=ON)
+0100 See p� 25� Output DV RX GPS/D-PRS Position 
+for transceive
+0101 See p� 25� Output DV RX D-PRS Object status 
+for transceive
+0102 See p� 26� Output DV RX D-PRS Item status 
+for transceive
+0103 See p� 26� Output DV RX D-PRS Weather 
+status for transceive
+0200*1 See p� 25� Read Auto DV RX GPS/D-PRS 
+Position status
+0201*1 See p� 25� Read Auto DV RX D-PRS Object 
+status
+0202*1 See p� 26� Read Auto DV RX D-PRS Item 
+status
+0203*1 See p� 26� Read Auto DV RX D-PRS Weather 
+status
+04 00* 00/01 Send/read Auto DV RX GPS/D-PRS 
+message output
+(00=OFF, 01=ON)
+01 See p� 26� Output DV RX D-PRS message for 
+transceive
+02*1 See p� 26� Read Auto DV RX D-PRS message 
+status
+21* 00 See p� 27� Send/read the RIT frequency
+01 00/01 Send/read the RIT setting
+(00=OFF, 01=ON)
+02 00/01 Send/read the ∂TX setting
+(00=OFF, 01=ON)
+Cmd� Sub cmd� Data Description
+22 00 See p� 27� Set the DV TX data (Up to 30 byte)
+01 00* 00/01 Set the Auto DV RX data output
+(00=OFF, 01=ON)
+01 See p� 27� Set the DV RX data for transceive
+02* 00/01 SET > DV Set > 
+Send/read the DV Data TX setting
+(00=PTT, 01=Auto)
+03* 00/01 SET > DV Set > DV Fast Data > 
+Send/read the Fast Data setting
+(00=OFF, 01=ON)
+04* 00/01 SET > DV Set > DV Fast Data > 
+Send/read the GPS Data Speed setting
+(00=Slow, 01=Fast)
+05* 00 ~ 10 SET > DV Set > DV Fast Data > 
+Send/read the TX Delay (PTT) setting
+( 00=OFF, 01=1sec ~ 10=10sec)
+23 00*1 See p� 27� Read the position status
+01* 00/01/03 GPS > GPS Set > 
+Send/read the GPS Select setting
+(00=OFF, 01=ON, 03=Manual)
+02* See p� 22� GPS > GPS Set > 
+Send/read the Manual Position setting
+24 00 00* 00/01 Send/read TX output power setting
+(00=OFF, 01=ON)
+01 00/01 Set the TX output power for transceive
+(00=OFF, 01=ON)
+25* See p� 27� Send/read the selected or 
+unselected VFO frequency
+26* See p� 27� Send/read the selected or unselected 
+VFO’s operating mode and filter
+27* 00 See p� 28� Read the Scope waveform data
+( Only when “Scope ON/OFF status” 
+(Command: 27 10) and “Scope 
+data output” (Command: 27 11) are 
+set to “ON,” outputs the waveform 
+data to the controller�)
+10 00/01 Send/read the Scope ON/OFF status
+(00=OFF, 01=ON)
+11 00/01 Send/read the Scope wave data output
+(00=OFF, 01=ON)
+12 00 Send/read the Main or Sub scope 
+setting
+(00=Main (fixed))
+13 00 Send/read the Single/Dual scope setting
+(00=Single (fixed))
+14 0000 ~ 0003 Send/read the Scope Center mode,
+Fixed mode, SCROLL-C mode, or 
+SCROLL-F mode setting
+( 0000=CENTER mode,  
+0001=FIX mode,  
+0002=SCROLL-C mode, 
+0003=SCROLL-F mode)
+15 See p� 29� Send/read the Span setting in the 
+Center mode or SCROLL-C mode 
+Scope
+16 0001 ~ 0004 Send/read the Edge number setting 
+in the Fixed mode or SCROLL-F 
+mode Scope
+REMOTE CONTROL
+Remote control (CI-V) information
+DCommand table
+Cmd� Sub cmd�
+27*
+17
+Data
+0000/
+0001
+19
+1A
+See p� 29�
+Description
+Send/read the Scope hold function 
+ON/OFF status
+(0000=OFF, 0001=ON)
+Send/read the Scope Reference 
+level setting
+0000 ~ 0002 Send/read the Sweep speed setting
+(0000=FAST, 0001=MID, 0002=SLOW)
+1B
+1C
+1D
+1E
+20
+00/01
+00 ~ 02
+0000/
+0001
+See p� 29�
+00/01
+SCOPE > SCOPE SET > 
+Send/read the Scope during Tx 
+(CENTER TYPE) setting
+(00=OFF, 01=ON)
+SCOPE > SCOPE SET > 
+Send/read the CENTER Type 
+Display setting
+( 00=Filter Center,  
+01=Carrier Point Center,  
+02=Carrier Point Center (Abs� Freq�))
+Send/read the Scope VBW setting
+(0000=NAR, 0001=WIDE)
+Send/read the Scope Fixed edge 
+frequencies
+SCOPE > SCOPE SET > 
+Send/read Marker Position (FIX 
+Type/SCROLL Type) setting
+( 00=Filter Center, 01=Carrier Point)
+28 00 00 ~ 08 Transmit the Voice TX Memory
+( 00=Stop, 01=T1 ~ 08=T8)
+*(Asterisk) Send/read data
+*1 Read only data
+*2 Send only data
+*3  In the CW mode, if the [PTT] or an external TX switch is ON, or the 
+Break-in function is ON, a message will be transmitted as CW code 
+when you send it from your PC�
+*4  Sending the power ON command (18 01) turns ON the transceiver 
+when the transceiver is OFF (Standby/Shutdown)�
+*5  To insert a counter, first clear the other channel’s counter�
+*6  Set at least 1 GPS sentence to ON� 
+Up to 4 GPS sentences can be set to ON at the same time�
+*7  Output setting is automatically set to OFF after turning OFF the 
+transceiver�
+16
+17
+REMOTE CONTROL
+Remote control (CI-V) information
+ DCommand formats
+ •Operating frequency
+Command: 00, 03, 05, 1C 03
+ •Duplex Offset frequency setting
+Command: 0C, 0D
+ •Operating mode
+Command: 01, 04, 06
+1Operating mode 2Filter setting
+00:LSB 05 :FM 01:FIL1
+01:USB 06 :WFM 02:FIL2
+02:AM 07 :CW-R 03:FIL3
+03:CW 08 :RTTY-R —
+04:RTTY 17 :DV —
+ LFilter setting, (2) can be skipped with command 
+01 and 06� In that case, “FIL1” is selected with 
+command 01 and the default filter setting of the 
+operating mode is automatically selected with 
+command 06�
+ •Codes for CW message contents
+Command: 17 (Up to 30 characters)
+To send CW messages, use the following 
+character codes�
+Character ASCII code
+0 ~ 9 30 ~ 39
+A ~ Z 41 ~ 5A
+a ~ z 61 ~ 7A
+/ 2F
+? 3F
+� 2E
+− 2D
+, 2C
+: 3A
+Character ASCII code
+’ 27
+( 28
+) 29
+= 3D
++ 2B
+” 22
+@ 40
+Space 20
+ L“FF” stops sending CW messages�
+ L“^” is used to transmit a string of characters with no  
+inter-character space� •Band edge frequency settings
+Command: 02*, 1E 01, 1E 03
+q
+XXX
+w e r t y u i o !0 !1 !2
+XXXXXXX0X2DXXXXXXXX0X
+10 Hz digit: 0 ~ 9
+1 Hz digit: 0 ~ 9
+1 kHz digit: 0 ~ 9
+100 Hz digit: 0 ~ 9
+100 kHz digit: 0 ~ 9
+10 kHz digit: 0 ~ 9
+10 MHz digit: 0 ~ 9
+1 MHz digit: 0 ~ 9
+1 GHz digit: (fixed)
+100 MHz digit: 0 ~ 4
+10 Hz digit: 0 ~ 9
+1 Hz digit: 0 ~ 9
+1 kHz digit: 0 ~ 9
+100 Hz digit: 0 ~ 9
+100 kHz digit: 0 ~ 9
+10 kHz digit: 0 ~ 9
+10 MHz digit: 0 ~ 9
+1 MHz digit: 0 ~ 9
+1 GHz digit: (fixed) 
+100 MHz digit: 0 ~ 4 
+Separator (fixed)
+Lower edge Higher edge
+Edge number*: 01 ~ 30
+X X X
+q w
+X
+e
+X 0
+1 kHz digit: 0 ~ 9
+100 Hz digit: 0 ~ 9
+100 kHz digit: 0 ~ 9
+10 kHz digit: 0 ~ 9
+10 MHz digit: (fixed)
+1 MHz digit: 0 ~ 9
+1
+X X X X X
+2 3
+X
+4 5
+X X X 0
+10 Hz digit: 0 ~ 9
+1 Hz digit: 0 ~ 9
+1 kHz digit: 0 ~ 9
+100 Hz digit: 0 ~ 9
+100 kHz digit: 0 ~ 9
+10 kHz digit: 0 ~ 9
+10 MHz digit: 0 ~ 9
+1 MHz digit: 0 ~ 9
+1 GHz digit: (fixed)
+100 MHz digit: 0 ~ 4
+q w
+X X X X
+*  When obtaining the edge number (by command 
+“02”), the edge number (1) is not returned�
+REMOTE CONTROL
+Remote control (CI-V) information
+DCommand formats
+• Memory content
+Command: 1A 00
+3, 4 1, 2 5 11
+1
+2
+1
+3
+6 ~ 10 16 ~ 18
+1
+4
+X X
+X X
+X X
+X X
+X
+1
+5
+X X X……XXXXXXXXXXX0XXXXXX
+1
+9 ~ 21 22 ~ 24
+2
+5
+X X
+X X
+X X XX
+X X
+X X XX
+2
+6 ~ 28 29～36 37 ~ 44 45 ~ 52 6 ~ 52 53 ~ 68
+XX……XX
+X X XX
+X X
+X X……XXXX……XX
+……………… ……
+X X
+X X
+1, 2: Memory group number
+0000 ~ 0099: Memory channel group
+0100:  
+Call channel group
+3, 4: Memory channel numbers
+• When Memory channel group is selected,  
+0000 ~ 0099: 00 ~ 99
+• When Call channel group is selected,  
+0000, 0001: 144 C1, C2 
+0002, 0003: 430 C1, C2
+5: Split and Select memory setting
+5
+X X
+0=OFF*
+1=1
+2=2
+3=3
+0=Split OFF,1=Split ON
+* Set 0 for Call channel�
+6~10: Operating frequency setting
+LSee “Operating frequency�” (p� 17)
+1
+1, 12: Operating mode setting
+LSee “Operating mode�” (p� 17)
+1
+3: Data mode setting
+1 byte data (XX)
+00: Data mode OFF
+01: Data mode ON
+1
+4: Duplex and Tone settings
+1
+4
+X X
+0=Duplex OFF
+1=Duplex−
+2=Duplex+
+0=OFF
+1=TONE
+2=TSQL
+3=DTCS
+1
+5: Digital squelch setting
+1
+5
+X 0
+Fixed
+0=Digital squelch function OFF
+1=Digital call sign squelch function ON (DSQL)
+2=Digital code squelch function ON (CSQL)
+1
+6~18: Repeater tone frequency setting
+1
+9~21: Repeater tone frequency setting
+LSee “Repeater tone/tone squelch frequency setting�” 
+(p� 22)
+2
+2~24: DTCS code setting
+LSee “DTCS code and polarity setting�” (p� 22)
+2
+5: DV Digital code squelch setting
+LSee “DV Digital code squelch setting�” (p� 23)
+2
+6~28: Duplex offset frequency setting
+LSee “Duplex Offset frequency setting�” (p� 17)
+2
+9~36:  UR (Destination) call sign setting 
+(8 characters, fixed)
+3
+7~44:  R1 (Access repeater) call sign setting 
+(8 characters, fixed)
+4
+5~52:  R2 (Gateway/Link repeater) call sign setting 
+(8 characters, fixed)
+LSee “DV TX call signs setting�” (p� 23)
+5
+3~68:  Memory name setting (16 characters, fixed)
+LSee “Codes for character entries�” (p� 19)
+To clear the memory channel contents on 1A 00:
+1, 2:  Memory channel group (0000~0099) 
+You cannot specify group “0100” (Call 
+channel group)
+3, 4: Memory channel (0000~0099)
+5: “FF,” 6 ~ : None
+NOTE:
+• The same data as 6 ~ 52 are stored in 6 ~ 52�
+• When the Split function is ON, the data of 6 ~ 52 
+is used for transmit�
+• Even if the Split function is OFF, enter the data 
+into 6 ~ 52 to match your transceiver� We 
+recommend that you set the same data as 6 ~ 52�
+18
+19
+REMOTE CONTROL
+Remote control (CI-V) information
+ DCommand formats
+ •Codes for character entries
+Command: 1A 00, 
+    1A 05  0168, 0288, 0308, 0310,  
+0311, 0322, 0325, 0337,  
+0345, 
+    1A 05 0291 ~ 1A 05 0294,
+    1A 05 0297 ~ 1A 05 0300- Character codes— Letters and Numbers
+Character ASCII code
+A ~ Z 41 ~ 5A
+0 ~ 9 30 ~ 39
+Character ASCII code
+a ~ z 61 ~ 7A- Character codes— Symbols
+Character ASCII code
+! 21
+$ 24
+& 26
+? 3F
+’ 27
+^ 5E
+− 2D
+/ 2F
+, 2C
+; 3B
+< 3C
+( 28
+[ 5B
+{ 7B
+| 7C
+͂ 7E
+Character ASCII code
+# 23
+% 25
+\ 5C
+” 22
+` 60
++ 2B
+* 2A
+� 2E
+: 3A
+= 3D
+> 3E
+) 29
+] 5D
+} 7D
+_ 5F
+@ 40
+Cmd� Sub cmd� Set item/selectable characters
+1A 00 Memory name
+All characters are usable�
+05 0168 NTP Server Address
+A ~ Z, a ~ z, 0 ~ 9, �, 
+ •Band stacking register
+Command: 1A 01
+1
+X X X X
+2
+NOTE: When sending the contents, the codes, 
+such as operating frequency and operating 
+mode*, should be added after the frequency 
+band code and the register code, as shown 
+below�
+*  See 6 ~ 52 on “Memory content�” (p� 18)
+1: Frequency band codes
+Code Freq� band Frequency range (unit: MHz)
+01 1�9 1�800000 ~ 1�999999
+02 3�5 3�400000 ~ 4�099999
+03 7 6�900000 ~ 7�499999
+04 10 9�900000 ~ 10�499999
+05 14 13�900000 ~ 14�499999
+06 18 17�900000 ~ 18�499999
+07 21 20�900000 ~ 21�499999
+08 24 24�400000 ~ 25�099999
+09 28 28�000000 ~ 29�999999
+10 50 50�000000 ~ 54�000000
+11 WFM 74�800000 ~ 107�999999
+12 Air 108�000000 ~ 136�999999
+13 144 144�000000 ~ 148�000000
+14 430 420�000000 ~ 450�000000
+15 GENE Other than above
+2: Register codes
+Code Registered number
+01 1 (Display on left side)
+02 2 (Display in center)
+03 3 (Display on Right side)
+To read the contents, the register code should be 
+added after the frequency band code, as shown 
+below�
+Example:  When reading the frequency displayed 
+in the center of the display in the 21 
+MHz band, use code “0703�”
+REMOTE CONTROL
+Remote control (CI-V) information
+DCommand formats
+• Keyer memory character entries
+Command: 1A 02- Character codes
+Character ASCII code
+0 ~ 9
+A ~ Z
+Space
+/
+?
+,
+�
+@
+^
+30 ~ 39
+41 ~ 5A
+20
+2F
+3F
+2C
+2E
+Description
+Numbers
+Letters
+Word space
+Symbol
+Symbol
+Symbol
+Symbol
+40
+5E
+*
+2A
+Symbol
+Example:  to send BT, 
+enter ^4254
+Inserts the contest number
+(can be used for 1 channel only)
+LInformation
+• “FA” (NG) is returned if you insert the content 
+number in more than 1 channel�
+• Spaces after the end of the sentence are not 
+necessary�
+• To clear the Keyer memory contents, send one or 
+more spaces�
+• Keyer memory content
+Command: 1A 02
+X
+X X X XX
+2 ~ 71: Text data
+1: Channel data
+01=M1 05=M5
+02=M2 06=M6
+03=M3 07=M7
+04=M4 08=M8
+• IF filter width settings
+Command: 1A 03
+Mode
+Data
+Steps
+SSB/CW/RTTY 0 ~ 9 50 ~ 500 Hz (50 Hz)
+SSB/CW
+RTTY
+10 ~ 40 600 Hz ~ 3�6 kHz (100 Hz)
+10 ~ 31 600 ~ 2�7 kHz (100 Hz)
+AM
+0 ~ 49
+200 Hz ~ 10�0 kHz (200 Hz)
+• AGC time constant settings
+Command: 1A 04
+Data
+00
+01
+02
+03
+04
+05
+06
+07
+08
+09
+10
+11
+12
+AGC time constant (sec�)
+SSB/CW/RTTY
+AM
+OFF
+0�1
+0�2
+0�3
+0�5
+0�8
+1�2
+1�6
+2�0
+2�5
+3�0
+4�0
+5�0
+OFF
+0�3
+0�5
+0�8
+1�2
+1�6
+2�0
+2�5
+3�0
+4�0
+5�0
+6�0
+7�0
+13
+6�0
+8�0
+• RX HPF/LPF setting for each operating mode
+Command: 1A 05  0001, 0004, 0007, 0010,  
+0015, 0016
+X X XX
+HPF (Lower edge)
+00=Through
+01 ~ 20=100 ~ 2000 Hz
+LPF(Upper edge)
+05 ~ 24=500~2400 Hz
+25=Through
+*The value of the HPF should be smaller than the LPF.
+• SSB/SSB-DATA transmission passband 
+width settings
+Command: 1A 05 0019 ~ 0022
+X
+X
+Lower edge
+Higher edge
+Lower edge
+0= 100 Hz 
+1= 200 Hz 
+2= 300 Hz 
+3= 500 Hz
+Higher edge
+0= 2500 Hz 
+1= 2700 Hz 
+2= 2800 Hz 
+3= 2900 Hz
+• Split offset frequency setting
+Command: 1A 05 0046
+1
+X
+2
+0
+X
+3
+X
+4
+0
+X
+X
+X
+Direction: 
+00=+ direction
+01=– direction
+1 kHz digit: 0 ~ 9
+100 Hz digit: 0 
+(fixed)
+100 kHz digit: 0 ~ 9
+10 kHz digit: 0 ~ 9
+10 MHz digit: 0
+(fixed)
+1 MHz digit: 0 ~ 9
+20
+21
+REMOTE CONTROL
+Remote control (CI-V) information
+ DCommand formats
+ •UTC Offset setting
+Command: 1A 05 0170
+Shift direction
+00=+ (plus)
+01=− (minus)
+Offset time
+0000 ~ 1400
+X X X X X X
+ •Remote MIC Key setting
+Command: 1A 05 0074 ~ 1A 05 0077
+Data Function
+00 No function
+01 UP
+02 DOWN
+03 UP (VFO: kHz)
+04 DOWN (VFO: kHz)
+05 VOL UP
+06 VOL DOWN
+07 XFC
+08 CALL
+09 VFO/MEMO
+10 DR
+11 FROM/TO (DR)
+12 Home CH
+13 BAND/GROUP UP
+14 BAND/GROUP DOWN
+15 SCAN
+16 Temporary Skip
+17 SPEECH
+18 MODE
+19 RF Power
+20 Voice/Keyer/RTTY Memory 1
+21 Voice/Keyer/RTTY Memory 2
+22 Voice/Keyer/RTTY Memory 3
+23 Voice/Keyer/RTTY Memory 4
+24 T-CALL*
+25 RX>CS
+26 TS
+27 MPAD
+28 SPLIT
+29 A/B
+30 TUNER
+* Only for European version�
+ •Color settings
+Command: 1A 05  0180, 0181, 0182, 0240,  
+0242, 0258, 0262, 0263
+1
+0 X X X 0 X X X 0 X X X
+2 3 4 5 6
+R (Red)
+0000 ~ 0255
+G (Green)
+0000 ~ 0255
+B (Blue)
+0000 ~ 0255
+ •Bandscope edge frequency settings
+Command:  1A 05 0188 ~ 1A 05 0238, 
+1A 05 0369 ~ 1A 05 0385
+1 kHz: 0 ~ 9
+100 Hz: 0 (fixed)
+100 kHz: 0 ~ 9
+10 kHz: 0 ~ 9
+10 MHz: 0 ~ 9
+1 MHz: 0 ~ 9
+1 GHz: 0 (fixed)
+100 MHz: 0 ~ 4
+1 kHz: 0 ~ 9
+100 Hz: 0 (fixed)
+100 kHz: 0 ~ 9
+10 kHz: 0 ~ 9
+10 MHz: 0 ~ 9
+1 MHz: 0 ~ 9
+1 GHz: 0 (fixed)
+100 MHz: 0 ~ 4
+1
+X 0 X X X X 0 X X 0 X X
+2 3 4 5 6
+Lower edge Higher edge
+X X 0 X
+7 8
+ • [VOX/BK-IN] setting
+Command: 1A 05 0367
+Data Function
+00 TRANSMIT
+01 TUNER
+02 VOX/BK-IN
+03 P�AMP/ATT
+04 NOTCH
+05 NB
+06 NR
+07 SPLIT
+08 A/B
+09 VFO/MEMO
+10 CD
+11 PRESET
+12 Home CH
+13 Temporary Skip
+14 Voice/Keyer/RTTY Memory 1
+15 Voice/Keyer/RTTY Memory 2
+16 Voice/Keyer/RTTY Memory 3
+17 Voice/Keyer/RTTY Memory 4
+22
+REMOTE CONTROL
+Remote control (CI-V) information
+ DCommand formats
+ •Manually entered position data
+Command:  1A 05 0286, 0312, 0326,  
+23 02
+10 degree digit: 0 ~ 9
+1 degree digit: 0 ~ 9
+10 minute digit: 0 ~ 5
+1 minute digit: 0 ~ 9
+0�1 minute digit: 0 ~ 9
+0�01 minute digit: 0 ~ 9
+0�001 minute digit: 0 ~ 9
+0 (Fixed)
+0 (Fixed)
+South latitude=0/North latitude=1
+0 (Fixed)
+100 degree digit: 0 ~ 1
+10 degree digit: 0 ~ 9
+1 degree digit: 0 ~ 9
+10 minute digit: 0 ~ 5
+1 minute digit: 0 ~ 9
+0�1 minute digit: 0 ~ 9
+0�01 minute digit: 0 ~ 9
+0�001 minute digit: 0 ~ 9
+0 (Fixed)
+0 (Fixed)
+West longitude=0/East longitude=1
+Latitude Longitude
+10000 meter digit: 0 ~ 1
+1000 meter digit: 0 ~ 9
+100 meter digit: 0 ~ 9
+10 meter digit: 0 ~ 9
+1 meter digit: 0 ~ 9
+0�1 meter digit: 0 ~ 9
+0 (Fixed)
++=0/–=1
+Altitude
+1
+XXXXXXX00X0XXXXXXXX00XXXXXXX0X
+23456789101112131415 * * * *
+:
+XX XX
+6 ~ 11
+∙∙∙∙∙∙∙ XX XX
+12 ~ 15
+∙∙∙∙∙∙∙ XX ∙∙∙∙∙∙∙ XX
+1 ~ 5
+1 ~ 5: Latitude (dd°mm�mmm format)
+6 ~ 11: Longitude (ddd°mm�mmm format)
+12 ~ 15: Altitude (0�1 meter steps)
+*  When reading the contents with no altitude, sends 
+12, 13, 14, and 15 as “FF�”
+*  When sending the contents with no altitude, set 12, 
+13, 14, and 15 to “FF�”
+ •D-PRS Symbol setting
+Command:  1A 05 0291 ~ 1A 05 0294,  
+1A 05 0310, 0324, 0335
+First digit Second digit
+X X X X
+ • ⁄,\,0to9,AtoZcanbeusedforthefirstdigit
+character�
+ •See “Codes for character entries” for the second 
+digit character� (p� 19)
+ •Alarm area (Group) setting
+Command:  1A 05 0346
+1
+X X X X 0
+2 3
+X
+10 min� digit: 0 ~ 5
+1 min� digit: 0 ~ 9
+0�1 min� digit: 0 ~ 9
+0�01 min� digit: 0 ~ 9
+0�001 min� digit: 0 ~ 9
+0 (fixed)
+ •Data mode with filter width settings
+Command:  1A 06
+1
+X X X X
+2
+01=FIL1
+02=FIL2
+03=FIL3
+00=Data mode OFF*
+01=Data mode ON
+*When 00 is set, also set 00 to 2�
+ •Repeater tone/tone squelch frequency settings
+Command:  1B 00, 1B 01
+100Hz digit: 0 ~ 2
+10 Hz digit: 0 ~ 9
+1 Hz digit: 0 ~ 9
+0�1 Hz digit: 0 ~ 9
+Fixed digit: 0*
+Fixed digit: 0*
+1*
+0 0 X X X
+2 3
+X
+*Not necessary when setting a frequency�
+ •DTCS code and polarity setting
+Command:  1B 02
+0 (fixed)
+First digit: 0 ~ 7
+Second digit: 0 ~ 7
+Third digit: 0 ~ 7
+Receive polarity: 0=Normal
+ 1=Reverse
+Transmit polarity: 0=Normal
+  1=Reverse
+1
+X X 0 X X
+2 3
+X
+ • [AUTOTUNE/RX>CS] setting
+Command: 1A 05 0368
+Data Function
+00 AUTOTUNE/RX>CS
+01 CD/RX>CS
+02 PRESET/RX>CS
+03 Home CH/RX>CS
+04 Temporary Skip/RX>CS
+REMOTE CONTROL
+Remote control (CI-V) information
+DCommand formats
+• DV Digital code squelch setting
+Command:  1B 07
+1
+X
+X
+First digit: 0 ~ 9
+Second digit: 0 ~ 9
+• DV MY call sign setting
+Command:  1F 00
+Set your own call sign and note of up to 12 
+characters�
+See “Character’s code of the call sign�”
+X X
+1 ~ 8
+∙∙∙∙∙∙∙∙
+9 ~ 12
+X X X X X X X X X X
+1 ~ 8: Your own call sign setting (8 characters)
+9 ~ 12: Note setting (4 characters)
+• DV TX call signs setting 
+(24 characters or 8 characters)
+Command:  1F 01
+Set “UR,” “R1,” and “R2” call signs of 8 characters 
+(fixed), or only the “UR” call sign�
+See “Character’s code of the call sign�”
+When setting “UR,” “R1,” and “R2” call signs
+1 ~ 8
+∙∙∙∙∙∙∙∙
+9 ~ 16
+X X XXXX XXXX
+∙∙∙∙∙∙∙∙
+1
+7 ~ 24
+∙∙∙∙∙∙∙∙
+X X
+1 ~ 8:  UR (Destination) call sign setting 
+(8 characters)
+9 ~ 16:  R1 (Access/Area repeater) call sign setting  
+(8 characters)
+1
+7 ~ 24:  R2 (Link/Gateway repeater) call sign setting 
+(8 characters)
+When setting only the “UR” call sign
+1 ~ 8
+X X XX
+∙∙∙∙∙∙∙∙
+1 ~ 8:  UR (Destination) call sign setting 
+(8 characters)
+Character’s code of the call sign
+Character
+0 ~ 9
+A ~ Z
+(Space)
+ASCII code
+30 ~ 39
+41 ~ 5A
+20
+/
+2F
+• DV TX message setting
+Command:  1F 02
+Set the transmit message of up to 20 characters�
+See “Codes for character entries�” (p� 19)
+“FF” stops sending or reading messages�
+23
+REMOTE CONTROL
+Remote control (CI-V) information
+DCommand formats
+• DV RX call sign data
+Command:  20 0001, 0002
+1, 2 3 ~  10 11 ~  14
+X
+X XX
+X X
+∙∙∙∙∙∙
+X
+X
+X X X
+1
+5 ~  22
+X XX XX
+2
+3 ~  30
+JM1ZLK calling from
+JP1YIU port A...
+JM1ZLK calling from
+JP1YIU port A...
+X X
+∙∙∙∙∙∙
+X X
+3
+1 ~  38
+X X
+∙∙∙∙∙∙
+X X
+1: Header flag data (First byte)
+Data
+bit7 (0: Fixed)
+bit6 (0: Fixed)
+bit5 (0: Fixed)
+bit4
+bit3
+bit2
+bit1
+0/1
+0/1
+0/1
+Description
+—
+—
+—
+0=Voice, 1=Data
+0=Direct, 1=Through repeater
+0=No Break-in, 1=Break-in
+0/1
+bit0
+0/1
+0=Data, 1=Control
+0=Normal, 1=EMR
+2: Header flag data (Second byte)
+Data
+bit2 bit1 bit0
+1
+1
+Description
+1 Repeater control
+1
+1
+1
+0
+0
+0
+1
+0
+0
+1
+1
+0 Send auto acknowledge
+1 (Not used)
+0 Request to re-transmit
+1 Send acknowledge
+0 Receive no reply
+0
+0
+0
+1 Repeater disabled
+0 NULL
+3 ~ 10:  Call sign of the caller station 
+(8 characters, fixed)
+1
+1 ~ 14:  Note of the caller station 
+(4 characters, fixed)
+1
+5 ~ 22:  Call sign of the called station 
+(8 characters, fixed)
+2
+3 ~ 30:  Call sign of the access/area repeater (R1) 
+(8 characters, fixed)
+3
+1 ~ 38:  Call sign of the link/gateway repeater (R2) 
+(8 characters, fixed)
+See “Codes for character entries�” (p� 19)
+LFF:  When no call sign is received since the 
+transceiver power was turned ON�
+• DV RX message
+Command:  20 0101, 0102
+∙∙∙∙∙∙
+1 ~  20
+X X
+∙∙∙∙∙∙
+21 ~  28 29 ~  32
+X X
+∙∙∙∙∙∙
+X X X X
+X
+X XX
+1 ~ 20: Message (20 characters)
+2
+1 ~ 28: Call sign of the caller station (8 characters)
+2
+9 ~ 32: Note of the caller station (4 characters)
+See “Codes for character entries�” (p� 19)
+LFF:  When no call sign is received since the 
+transceiver power was turned ON�
+Example: When a Gateway call is received
+JM1ZLK calling from 
+JM1ZLK calling from 
+RXRPT2
+GW
+RXRPT1
+CALLED
+JP1YIU port A...
+JP1YIU port A...
+INTERNET
+CALLER
+YOUR STATION
+CALLER: Caller’s call sign
+CALLED: Called station call sign
+RXRPT1:  Call sign of the repeater that was 
+accessed by the caller station
+LIf it was a call through a gateway and the 
+internet, this item displays the gateway 
+call sign of the repeater you received the 
+call from�
+JM1ZLK calling from
+JP1YIU port A...
+JM1ZLK calling from
+JP1YIU port A...
+RXRPT2:  Call sign of the repeater you received 
+the call from
+• DV RX Status setting
+Command:  20 0201, 0202
+Data
+bit7
+Function
+0 (Fixed)
+bit6 0/1 Receiving a 
+voice call
+Description
+—
+While receiving a digital voice 
+signal, select “1�”
+( Regardless of DSQL and 
+CSQL setting)
+bit5 0/1 Last call 
+finisher
+bit4 0/1 Receiving a 
+signal
+bit3 0/1 Receiving a 
+BK call
+bit2 0/1 Receiving a 
+EMR call
+bit1 0/1
+When the last call was finished 
+by you, select “1�”
+When the audio tone can be 
+heard, select “1�”
+While receiving a BK call, 
+select “1�”
+While receiving a EMR call, 
+select “1�”
+Receiving a 
+signal other 
+than DV
+bit0 0/1 Packet loss 
+status
+When “DV” and “FM” are 
+blinking, select “1�”
+While displaying packet loss, 
+“1” is returned�
+24
+25
+REMOTE CONTROL
+Remote control (CI-V) information
+ DCommand formats
+ •GPS/D-PRS data
+Command: 20 03  0100, 0101, 0102, 0103,  
+0200, 0201, 0202, 0203
+Data number and description
+Data number Description
+00 D-PRS — Position
+01 D-PRS — Object
+02 D-PRS — Item
+03 D-PRS — Weather
+Position
+Command: 20 03 0100, 0200
+XXXXXXXX
+XXXX
+XXXX
+X
+0 0XX XX ∙∙∙∙∙∙
+1 ~  9 10    11
+39 40 41 42
+XX XX ∙∙∙∙∙∙
+12 ~  16
+XX XX ∙∙∙∙∙∙
+17 ~  22
+XX XX ∙∙∙∙∙∙
+23 ~  26 27    28
+X XX ∙∙∙∙∙∙
+29 ~  31
+XX XX ∙∙∙∙∙∙
+32 ~  38
+Data number
+1 ~ 9:  Call sign/SSID 
+(9 ASCII characters (A ~ Z, 0 ~ 9, /, -, space))
+10, 11:  Symbol (2 ASCII characters (00h ~ EFh))
+12 ~ 16: Latitude (dd°mm�mmm format)
+17 ~ 22: Longitude (ddd°mm�mmm format)
+23 ~ 26: Altitude (0�1 meter steps)
+27, 28: Course (1 degree steps)
+29 ~ 31: Speed (0�1 km/h steps)
+32 ~ 38:  Date (UTC: yyyymmddHHMMSS)  
+( y: Year, m: Month, d: Day,  
+H: Hour, M: Minute, S: Second)
+39 ~ 42: See the table below�
+39 Power 40 Height 41 Gain 42 Directivity
+Data (W) (m/ft) (dB) (deg)
+0 0 3/10 0 Omni-direction
+1 1 6/20 1 45° NE
+2 4 12/40 2 90° E
+3 9 24/80 3 135° SE
+4 16 49/160 4 180° S
+5 25 98/320 5 225° SW
+6 36 195/640 6 270° W
+7 49 390/1280 7 315° NW
+8 64 780/2560 8 360° N
+9 81 1561/5120 9 —
+ LThe item, that is not contained the received data, is filled 
+with “FF�”
+ LFF:  No signal has been received since the power was 
+turned ON�
+Object
+Command: 20 03 0101, 0201
+XXXXXX
+XX
+XXXX
+XXXXXX XX ∙∙∙∙∙∙
+10    11
+39
+XX
+52
+40 41
+42
+12 ~  16
+XX XX ∙∙∙∙∙∙
+17 ~  22
+XX XX ∙∙∙∙∙∙
+23 ~  26 27 28
+0 1XX XX ∙∙∙∙∙∙
+1 ~  9
+XX XX ∙∙∙∙∙∙
+29 ~  31
+XX XX ∙∙∙∙∙∙
+32 ~  38
+XX XX ∙∙∙∙∙∙
+43 ~  51
+Data number
+1 ~ 9:  Call sign/SSID 
+(9 ASCII characters (A ~ Z, 0 ~ 9, /, -, space))
+10, 11:  Symbol (2 ASCII characters (00h ~ EFh))
+12 ~ 16: Latitude (dd°mm�mmm format)
+17 ~ 22: Longitude (ddd°mm�mmm format)
+23 ~ 26: Altitude (0�1 meter steps)
+27, 28: Course (1 degree steps)
+29 ~ 31: Speed (0�1 km/h steps)
+32 ~ 38:  Date (UTC: yyyymmddHHMMSS)  
+( y: Year, m: Month, d: Day,  
+H: Hour, M: Minute, S: Second)
+39 ~ 42: See the table below�
+39 Power 40 Height 41 Gain 42 Directivity
+Data (W) (m/ft) (dB) (deg)
+0 0 3/10 0 Omni-direction
+1 1 6/20 1 45° NE
+2 4 12/40 2 90° E
+3 9 24/80 3 135° SE
+4 16 49/160 4 180° S
+5 25 98/320 5 225° SW
+6 36 195/640 6 270° W
+7 49 390/1280 7 315° NW
+8 64 780/2560 8 360° N
+9 81 1561/5120 9 —
+43 ~ 51:  Name 
+(9 ASCII characters (00h ~ EFh))
+52:   Type (1= Live, 0= Killed)
+ LThe item, that is not contained the received data, is filled 
+with “FF�”
+ LFF:  No signal has been received since the power was 
+turned ON�
+26
+REMOTE CONTROL
+Remote control (CI-V) information
+ DCommand formats
+ •GPS/D-PRS data (Continued)
+Item
+Command: 20 03 0102, 0202
+1 ~ 9:  Call sign/SSID 
+(9 ASCII characters (A ~ Z, 0 ~ 9, /, -, space))
+10, 11:  Symbol (2 ASCII characters (00h ~ EFh))
+12 ~ 16: Latitude (dd°mm�mmm format)
+17 ~ 22: Longitude (ddd°mm�mmm format)
+23 ~ 26: Altitude (0�1 meter steps)
+27, 28: Course (1 degree steps)
+29 ~ 31: Speed (0�1 km/h steps)
+32 ~ 35: See the table below�
+32 Power 33 Height 34 Gain 35 Directivity
+Data (W) (m/ft) (dB) (deg)
+0 0 3/10 0 Omni-direction
+1 1 6/20 1 45° NE
+2 4 12/40 2 90° E
+3 9 24/80 3 135° SE
+4 16 49/160 4 180° S
+5 25 98/320 5 225° SW
+6 36 195/640 6 270° W
+7 49 390/1280 7 315° NW
+8 64 780/2560 8 360° N
+9 81 1561/5120 9 —
+36 ~ 44:  Name 
+(9 ASCII characters (00h ~ EFh))
+45:   Type (1= Live, 0= Killed)
+ LThe item, that is not contained the received data, is filled 
+with “FF�”
+ LFF:  No signal has been received since the power was 
+turned ON�
+XXXXXX
+XXXX
+XXXX
+XXX
+10    11
+33 32
+XX
+45
+34 35
+XX XX ∙∙∙∙∙∙
+12 ~  16
+XX XX ∙∙∙∙∙∙
+17 ~  22
+XX XX ∙∙∙∙∙∙
+23 ~  26 27
+XX X ∙∙∙∙∙∙
+29 ~  31
+XX XX ∙∙∙∙∙∙
+36 ~  44
+28
+0 2XX XX ∙∙∙∙∙∙
+1 ~  9
+Data number
+Weather
+Command: 20 03 0103, 0203
+1 ~ 9:  Call sign/SSID 
+(9 ASCII characters (A ~ Z, 0 ~ 9, /, -, space))
+10, 11:  Symbol (2 ASCII characters (00h ~ EFh))
+12 ~ 16: Latitude (dd°mm�mmm format)
+17 ~ 22: Longitude (ddd°mm�mmm format)
+23 ~ 29:  Date (UTC: yyyymmddHHMMSS)  
+( y: Year, m: Month, d: Day,  
+H: Hour, M: Minute, S: Second)
+30, 31:  Wind direction (1 degree steps)
+32, 33:  Wind speed (0�1 m/s steps)
+34, 35:  Gust speed (0�1 m/s steps)
+36 ~ 37:  Temperature (0�1°C steps)
+38:    Temperature (0= + degree, 1= – degree)
+39, 40:  Rainfall (0�1 mm steps)
+41, 42:  Rainfall (24 hours) (0�1 mm steps)
+43, 44:  Rainfall (Midnight) (0�1 mm steps)
+45, 46:  Humidity (1% steps)
+47 ~ 49:  Barometric pressure (0�1 hPa steps)
+ LThe item, that is not contained the received data, is filled 
+with “FF�”
+ LFF:  No signal has been received since the power was 
+turned ON�
+XXXXXX
+XXXX
+10    11
+XX XX ∙∙∙∙∙∙
+12 ~  16
+XX XX ∙∙∙∙∙∙
+17 ~  22
+XX XX ∙∙∙∙∙∙
+23 ~  29 30 31 32
+0 3XX XX ∙∙∙∙∙∙
+1 ~  9
+XX
+33
+XXXX
+34 35
+XXXXXX
+XX
+39 40 41
+42
+XX XX ∙∙∙∙∙∙
+36 ~  38
+XXXX
+43 44
+XXXX
+45 46
+XX XX ∙∙∙∙∙∙
+47 ~  49
+Data number
+ •GPS/D-PRS message
+Command:  20 0401, 0402
+1 ~ 9 10 ~ 52
+(Variable length)
+• • • • • • XX XX XX XX
+1 ~ 9:  Call sign/SSID 
+(9 ASCII characters (A ~ Z, 0 ~ 9, /, -, space))
+10 ~ 52:  Message 
+(Up to 43 ASCII characters (00h ~ EFh))
+ LFF:  No signal has been received since the power was 
+turned ON�
+REMOTE CONTROL
+Remote control (CI-V) information
+DCommand formats
+• RIT frequency settings
+Command:  21 00
+X
+X
+X
+X
+X
+X
+10 Hz: 0 ~ 9
+1 Hz: 0 ~ 9
+1 kHz: 0 ~ 9
+• DV TX data
+Command:  22 00
+X X
+100 Hz: 0 ~ 9
+1 ~  30
+00: + (plus)
+01: – (minus)
+∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙
+(Variable length)
+1 ~ 30:  TX data (Up to 30 Byte)
+L“FA” to “FF” are entered after converted to “FF 0A” 
+to “FF 0F” automatically� Up to 60 Byte data can be 
+entered in this case�
+• DV RX data (transceive)
+Command:  22 0101
+1 ~ 30:  RX data (Up to 30 Byte)
+L“FA” to “FF” are entered after converted to “FF 0A” 
+to “FF 0F” automatically� Up to 60 Byte data can be 
+entered in this case�
+• MY position data
+Command:  23 00
+1 ~  5
+X X XX
+∙∙∙∙∙∙∙
+6 ~  11
+X X XX
+∙∙∙∙∙∙∙
+1
+2 ~  15
+X X XX
+1
+6
+1
+7
+∙∙∙∙∙∙∙
+1
+8 ~  20
+X X
+X X
+X X XX
+∙∙∙∙∙∙∙
+2
+1 ~  27
+X X XX
+∙∙∙∙∙∙∙
+1 ~ 5: Latitude (dd°mm�mmm format)
+6 ~ 11: Longitude (ddd°mm�mmm format)
+1
+2 ~ 15: Altitude (0�1 meter steps)
+1
+6, 17: Course (1 degree steps)
+1
+8 ~ 20: Speed (0�1 km/h steps)
+2
+1 ~ 27:  Date (UTC: yyyymmddHHMMSS)  
+( y: Year, m: Month, d: Day,  
+H: Hour, M: Minute, S: Second)
+• Selected or unselected VFO frequency settings
+Command: 25
+X X X X X X X X X X X X
+00=Selected VFO
+01=Unselected VFO
+Operating frequency
+See “Operating frequency�” (p� 17)
+LWhen using the DR function, the transceiver returns 
+“FA” (NG) because these cannot be set to 01�
+• When VFO A is selected 
+00=frequency of VFO A changes 
+01=frequency of VFO B changes
+X X
+• When VFO B is selected 
+00=frequency of VFO B changes 
+01=frequency of VFO A changes
+• Selected or unselected VFO’s operating 
+mode and filter settings
+Command: 26
+Both data and filter settings can be skipped� 
+In that case, “DATA OFF” and the default filter 
+setting of the operating mode is automatically 
+selected�
+2Data mode setting
+X
+X
+X
+X
+X
+X
+1Operating mode setting
+00=Selected VFO
+01=Unselected VFO
+X
+X
+3Filter setting
+LWhen using the DR function, the transceiver returns 
+“FA” (NG) because these cannot be set to 01�
+• When VFO A is selected 
+00 = operating mode of VFO A changes 
+01 = operating mode of VFO B changes
+• When VFO B is selected 
+00 = operating mode of VFO B changes 
+01 = operating mode of VFO A changes
+1  Operating mode 
+setting
+00:LSB
+01:USB
+02:AM
+03:CW
+05:FM
+06:WFM
+07:CW-R
+2  Data mode 
+setting
+3  Filter 
+setting
+00: Data mode OFF 01:FIL1
+01: Data mode ON 02:FIL2
+—
+08:RTTY-R
+04:RTTY 17:DV
+—
+—
+03:FIL3
+—
+—
+27
+28
+REMOTE CONTROL
+Remote control (CI-V) information
+ DCommand formats
+ •Scope waveform data
+Command:  27 00
+Outputs the waveform data to the controller�
+XX XX 0 0 XX XX
+1 2 3 4 5
+XXXX������ XX
+6 7
+������ XX
+1: 00 (Fixed)
+2: Order of division data (Current): 01~11
+3:  Division number (Maximum): 01(WLAN), 11(USB)
+ LWhen data is sent to the controller using 
+the WLAN function, all data is sent together� 
+However, when the data is sent through the 
+[microUSB] port, the data is divided by 11 and 
+sent in sequential order�
+ LThe 1st data sends only the wave information 
+(1 ~ 6) without the waveform data (7)� The 
+2nd or later data sends the minimum wave 
+information (1 ~ 3) with waveform data (7)�
+4: Spectrum scope mode data:
+ •00 = Center mode scope
+ •01 = Fixed mode scope
+ •02 = SCROLL-C mode scope
+ •03 = SCROLL-F mode scope
+5:  Waveform information: 
+The waveform information differs, depending on 
+the Spectrum scope mode�
+ • In the Center mode: 
+Center frequency and span are sent� 
+See page 17 for Operating frequency data, and 
+the Scope span settings (2 ~ 6) on page 29�
+ • In the Fixed, SCROLL-C, and SCROLL-F modes: 
+Lower edge and higher edge frequencies are 
+sent�
+XXXXXXXXXXXXXXXXXX0X
+10 Hz digit: 0 ~ 9
+1 Hz digit: 0 ~ 9
+1 kHz digit: 0 ~ 9
+100 Hz digit: 0 ~ 9
+100 kHz digit: 0 ~ 9
+10 kHz digit: 0 ~ 9
+10 MHz digit: 0 ~ 9
+1 MHz digit: 0 ~ 9
+1 GHz digit: 0 , F*
+100 MHz digit: 0 ~ 4
+10 Hz digit: 0 ~ 9
+1 Hz digit: 0 ~ 9
+1 kHz digit: 0 ~ 9
+100 Hz digit: 0 ~ 9
+100 kHz digit: 0 ~ 9
+10 kHz digit: 0 ~ 9
+10 MHz digit: 0 ~ 9
+1 MHz digit: 0 ~ 9
+1 GHz digit: 0 (Fixed)
+100 MHz digit: 0 ~ 4
+Lower edge Higher edge
+ *  “F” means that the Lower edge frequency is a 
+negative value�
+6:  Out of range information:
+ •00 = In range
+ •01 = Out of range
+ LIf the scope data is out of range, the waveform 
+data (7) is omitted�
+7:  Waveform data: 
+The transceiver outputs the drawn waveform data� 
+The data range or data length of the waveform 
+data is judged by the controller� (The data range is 
+basically the same as the display size of the scope 
+on the controller�)
+ •Data range: 0 ~ 160
+ •Data length: 475
+29
+REMOTE CONTROL
+Remote control (CI-V) information
+ DCommand formats
+ •Scope span settings  
+(in the Center mode and SCROLL-C mode Scope)
+Command: 27 15
+0 0 0 0 XX XX 0 0 0 0
+1
+1 kHz digit: 0, 2, 5
+100 Hz digit: 0, 5
+100 kHz digit: 0, 1, 2, 5
+10 kHz digit: 0, 1, 2, 5 
+10 Hz digit: 0 (Fixed)
+1 Hz digit: 0 (Fixed)
+10 MHz digit: 0 (Fixed)
+1 MHz digit: 0 (Fixed)
+1 GHz digit: 0 (Fixed)
+100 MHz digit: 0 (Fixed)
+2 3 4 5 6
+0 (Fixed)
+0 (Fixed)
+Span (kHz)
+2500 2�5
+5000 5
+10000 10
+25000 25
+50000 50
+100000 100
+250000 250
+500000 500
+ •Scope Reference level settings
+Command: 27 19
+X X XX X 0 XX
+00= + (plus)
+01= – (minus)
+10 dB digit: 0, 1, 2
+1 dB digit: 0 ~ 9
+0�1 dB digit: 0, 5
+0�01 dB digit: 0
+(Fixed)
+0 (Fixed)
+0 (Fixed)
+Adjustable range:  –20�0 dB ~ +20�0 dB  
+in 0�5 dB steps�
+ •Scope Fixed edge frequency settings
+Command: 27 1E
+1
+0X XX X
+2 3 4 5 6 7 8 9 10 11 12
+XXXXXXX 0XXXXXXXXX0X
+10 Hz digit: 0 ~ 9
+1 Hz digit: 0 ~ 9
+1 kHz digit: 0 ~ 9
+100 Hz digit: 0 ~ 9
+100 kHz digit: 0 ~ 9
+10 kHz digit: 0 ~ 9
+10 MHz digit: 0 ~ 9
+1 MHz digit: 0 ~ 9
+1 GHz digit: 0 (Fixed)
+100 MHz digit: 0 ~ 4
+10 Hz digit: 0 ~ 9
+1 Hz digit: 0 ~ 9
+1 kHz digit: 0 ~ 9
+100 Hz digit: 0 ~ 9
+100 kHz digit: 0 ~ 9
+10 kHz digit: 0 ~ 9
+10 MHz digit: 0 ~ 9
+1 MHz digit: 0 ~ 9
+1 GHz digit: 0 (Fixed)
+100 MHz digit: 0 ~ 4
+Frequency range
+Lower edge Higher edge
+Edge number: 01 ~ 04
+ LEntry of less than 1 kHz digits are ignored�
+1 Selectable Frequency ranges:
+Data Frequency range (Hz)
+01 0�03 ~ 1�60
+02 1�60 ~ 2�00
+03 2�00 ~ 6�00
+04 6�00 ~ 8�00
+05 8�00 ~ 11�00
+06 11�00 ~ 15�00
+07 15�00 ~ 20�00
+08 20�00 ~ 22�00
+09 22�00 ~ 26�00
+10 26�00 ~ 30�00
+11 30�00 ~ 45�00
+12 45�00 ~ 60�00
+13 60�00 ~ 74�80
+14 74�80 ~ 108�00
+15 108�00 ~ 137�00
+16 137�00 ~ 200�00
+17 400�00 ~ 470�00
+2  Selectable Edge number: 01=1, 02=2, 03=3, 04=4
+How the World Communicate
