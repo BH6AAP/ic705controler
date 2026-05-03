@@ -2,6 +2,8 @@ package com.bh6aap.ic705Cter.ui.components
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.KeyboardOptions
 import android.widget.Toast
 import androidx.compose.material3.*
@@ -102,15 +104,20 @@ fun StationSettingsDialog(
         Surface(
             modifier = Modifier
                 .fillMaxWidth(0.95f)
-                .wrapContentHeight(),
+                .fillMaxHeight(0.8f),
             shape = MaterialTheme.shapes.large,
             tonalElevation = 6.dp
         ) {
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
+                modifier = Modifier.fillMaxSize()
             ) {
+                // 可滚动内容区
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .verticalScroll(rememberScrollState())
+                        .padding(16.dp)
+                ) {
                 // 标题栏
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -276,12 +283,15 @@ fun StationSettingsDialog(
                         )
                     }
                 }
+                }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                HorizontalDivider()
 
                 // 按钮行
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)
                 ) {
                     TextButton(onClick = onDismiss) {
