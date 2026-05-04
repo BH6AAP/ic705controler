@@ -1,6 +1,8 @@
 package com.bh6aap.ic705Cter.ui.components
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -22,6 +24,7 @@ import com.bh6aap.ic705Cter.data.database.entity.StationEntity
 import com.bh6aap.ic705Cter.util.LogManager
 import com.bh6aap.ic705Cter.R
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.compose.ui.res.stringResource
@@ -172,9 +175,9 @@ fun StationListDialog(
                             try {
                                 dbHelper.deleteStation(station)
                                 LogManager.i("StationListDialog", "删除地面站: ${station.name} (ID: ${station.id})")
-                                // If deleted station was default, list will auto-update via Flow
+                                val updatedStations = dbHelper.getAllStations().first()
                                 withContext(Dispatchers.Main) {
-                                    // List auto-updates because Flow is used
+                                    stations = updatedStations
                                 }
                             } catch (e: Exception) {
                                 LogManager.e("StationListDialog", "删除地面站失败", e)
@@ -197,6 +200,7 @@ fun StationListDialog(
 /**
  * Ground station list item
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun StationListItem(
     station: StationEntity,
@@ -207,7 +211,10 @@ private fun StationListItem(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick),
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onDeleteClick
+            ),
         colors = CardDefaults.cardColors(
             containerColor = if (isSelected) {
                 MaterialTheme.colorScheme.primaryContainer

@@ -1,10 +1,12 @@
 package com.bh6aap.ic705Cter.ui.components
 
 import android.content.Context
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -144,14 +146,14 @@ fun CallsignLibraryEditDialog(
         Surface(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp),
+                .padding(8.dp),
             shape = RoundedCornerShape(16.dp),
             color = MaterialTheme.colorScheme.background
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(16.dp)
+                    .padding(12.dp)
             ) {
                 // 标题栏
                 Row(
@@ -174,7 +176,7 @@ fun CallsignLibraryEditDialog(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
                 // 添加新呼号区域
                 Card(
@@ -187,8 +189,8 @@ fun CallsignLibraryEditDialog(
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                            .padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Text(
                             text = stringResource(R.string.callsign_library_add),
@@ -199,7 +201,7 @@ fun CallsignLibraryEditDialog(
 
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             OutlinedTextField(
@@ -256,14 +258,16 @@ fun CallsignLibraryEditDialog(
                                     }
                                 },
                                 enabled = newCallsign.isNotBlank(),
-                                shape = RoundedCornerShape(8.dp)
+                                shape = RoundedCornerShape(8.dp),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Add,
-                                    contentDescription = stringResource(R.string.common_add)
+                                    contentDescription = stringResource(R.string.common_add),
+                                    modifier = Modifier.size(18.dp)
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
-                                Text(stringResource(R.string.common_save))
+                                Text(stringResource(R.string.common_save), style = MaterialTheme.typography.labelMedium)
                             }
                         }
 
@@ -279,7 +283,7 @@ fun CallsignLibraryEditDialog(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
                 // 错误提示
                 errorMessage?.let { error ->
@@ -331,7 +335,8 @@ fun CallsignLibraryEditDialog(
                     )
 
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         if (searchQuery.isNotBlank()) {
@@ -347,22 +352,15 @@ fun CallsignLibraryEditDialog(
                             onClick = {
                                 scope.launch {
                                     LogManager.i("CallsignLibraryEditDialog", "点击导出按钮，呼号数量: ${callsigns.size}")
-                                    // 检查并请求存储权限
                                     val hasPermission = checkAndRequestStoragePermission(context)
                                     LogManager.i("CallsignLibraryEditDialog", "权限检查结果: $hasPermission")
                                     if (hasPermission) {
                                         scope.launch(Dispatchers.IO) {
                                             exportCallsignsToTxt(context, callsigns) { success, message ->
                                                 scope.launch(Dispatchers.Main) {
-                                                    LogManager.i("CallsignLibraryEditDialog", "导出结果: success=$success, message=$message")
                                                     if (success) {
                                                         errorMessage = null
-                                                        // 显示成功提示
-                                                        android.widget.Toast.makeText(
-                                                            context,
-                                                            message,
-                                                            android.widget.Toast.LENGTH_LONG
-                                                        ).show()
+                                                        android.widget.Toast.makeText(context, message, android.widget.Toast.LENGTH_LONG).show()
                                                     } else {
                                                         errorMessage = message
                                                     }
@@ -374,32 +372,33 @@ fun CallsignLibraryEditDialog(
                                     }
                                 }
                             },
-                            enabled = callsigns.isNotEmpty()
+                            enabled = callsigns.isNotEmpty(),
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Share,
                                 contentDescription = stringResource(R.string.callsign_library_export),
-                                modifier = Modifier.size(18.dp)
+                                modifier = Modifier.size(16.dp)
                             )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(stringResource(R.string.callsign_library_export))
+                            Spacer(modifier = Modifier.width(2.dp))
+                            Text(stringResource(R.string.callsign_library_export), style = MaterialTheme.typography.labelSmall)
                         }
 
                         // 导入按钮
                         TextButton(
                             onClick = {
                                 LogManager.i("CallsignLibraryEditDialog", "点击导入按钮，打开系统文件选择器")
-                                // 打开系统文件选择器，允许选择txt和csv文件
                                 filePickerLauncher.launch("text/*")
-                            }
+                            },
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.List,
                                 contentDescription = stringResource(R.string.callsign_library_import),
-                                modifier = Modifier.size(18.dp)
+                                modifier = Modifier.size(16.dp)
                             )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(stringResource(R.string.callsign_library_import))
+                            Spacer(modifier = Modifier.width(2.dp))
+                            Text(stringResource(R.string.callsign_library_import), style = MaterialTheme.typography.labelSmall)
                         }
 
                         // 一键清空按钮
@@ -409,19 +408,17 @@ fun CallsignLibraryEditDialog(
                                     showClearAllConfirm = true
                                 }
                             },
-                            enabled = callsigns.isNotEmpty()
+                            enabled = callsigns.isNotEmpty(),
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Delete,
                                 contentDescription = stringResource(R.string.callsign_library_clear),
-                                modifier = Modifier.size(18.dp),
+                                modifier = Modifier.size(16.dp),
                                 tint = MaterialTheme.colorScheme.error
                             )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                stringResource(R.string.callsign_library_clear),
-                                color = MaterialTheme.colorScheme.error
-                            )
+                            Spacer(modifier = Modifier.width(2.dp))
+                            Text(stringResource(R.string.callsign_library_clear), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
                         }
                     }
                 }
@@ -619,26 +616,26 @@ private fun CallsignItem(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+                .padding(horizontal = 12.dp, vertical = 8.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
                 text = callsign,
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.onSurface
             )
 
             IconButton(
                 onClick = onDelete,
-                modifier = Modifier.size(32.dp)
+                modifier = Modifier.size(28.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.Delete,
                     contentDescription = stringResource(R.string.common_delete),
                     tint = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(18.dp)
                 )
             }
         }

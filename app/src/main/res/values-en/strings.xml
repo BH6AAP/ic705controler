@@ -136,6 +136,7 @@
     <string name="settings_language">Language</string>
     <string name="settings_language_desc">Switch application display language</string>
     <string name="settings_designer">Designed by BH6AAP</string>
+    <string name="settings_donate">☕ Support Author</string>
     <string name="settings_station_saved">Station updated</string>
     <string name="settings_api_saved">API settings saved</string>
 
