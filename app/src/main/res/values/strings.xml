@@ -136,7 +136,6 @@
     <string name="settings_language">语言设置</string>
     <string name="settings_language_desc">切换应用显示语言</string>
     <string name="settings_designer">Designed by BH6AAP</string>
-    <string name="settings_donate">☕ 支持作者</string>
     <string name="settings_station_saved">地面站已更新</string>
     <string name="settings_api_saved">API设置已保存</string>
 

@@ -56,6 +56,7 @@ import com.bh6aap.ic705Cter.data.CallsignDataStore
 import com.bh6aap.ic705Cter.data.CallsignRecord
 import com.bh6aap.ic705Cter.data.radio.BluetoothConnectionManager
 import com.bh6aap.ic705Cter.sensor.SensorFusionManager
+import com.bh6aap.ic705Cter.ui.components.EmbeddedKeyboard
 import com.bh6aap.ic705Cter.tracking.DopplerDataCache
 import com.bh6aap.ic705Cter.tracking.SatelliteTracker
 import com.bh6aap.ic705Cter.tracking.SatelliteTrackingController
@@ -2767,6 +2768,7 @@ private fun SimpleCallsignRecorder(
     var inputText by remember { mutableStateOf("") }
     var searchSuggestions by remember { mutableStateOf<List<String>>(emptyList()) }
     var showSuggestions by remember { mutableStateOf(false) }
+    var showKeyboard by remember { mutableStateOf(false) }
     val records by dataStore.getCallsigns().collectAsState(initial = emptyList())
 
     // 时间格式化
@@ -2807,10 +2809,41 @@ private fun SimpleCallsignRecorder(
                 )
                 inputText = ""
                 showSuggestions = false
+                showKeyboard = false
             }
         }
     }
     
+    // 处理键盘输入
+    fun handleKeyPress(key: String) {
+        val newText = inputText + key
+        inputText = newText
+        
+        // 实时搜索呼号
+        if (newText.length >= 2) {
+            searchSuggestions = callsignMatcher.search(newText, limit = 10)
+            showSuggestions = searchSuggestions.isNotEmpty()
+        } else {
+            showSuggestions = false
+        }
+    }
+    
+    // 处理退格
+    fun handleBackspace() {
+        if (inputText.isNotEmpty()) {
+            val newText = inputText.dropLast(1)
+            inputText = newText
+            
+            // 更新搜索建议
+            if (newText.length >= 2) {
+                searchSuggestions = callsignMatcher.search(newText, limit = 10)
+                showSuggestions = searchSuggestions.isNotEmpty()
+            } else {
+                showSuggestions = false
+            }
+        }
+    }
+
     Surface(
         modifier = modifier,
         shape = RoundedCornerShape(8.dp),
@@ -2866,21 +2899,26 @@ private fun SimpleCallsignRecorder(
                     }
                 }
 
-                // 呼号输入框（支持系统键盘输入和拖拽）
+                // 只读文本框，点击显示内嵌键盘
+                val interactionSource = remember { MutableInteractionSource() }
+                
+                // 监听点击事件
+                LaunchedEffect(interactionSource) {
+                    interactionSource.interactions.collect { interaction ->
+                        if (interaction is androidx.compose.foundation.interaction.PressInteraction.Release) {
+                            showKeyboard = !showKeyboard
+                        }
+                    }
+                }
+                
                 OutlinedTextField(
                     value = inputText,
-                    onValueChange = { newText ->
-                        inputText = newText
-                        if (newText.length >= 2) {
-                            searchSuggestions = callsignMatcher.search(newText, limit = 10)
-                            showSuggestions = searchSuggestions.isNotEmpty()
-                        } else {
-                            showSuggestions = false
-                        }
-                    },
+                    onValueChange = { }, // 禁用系统输入法
+                    readOnly = true, // 设置为只读，禁用系统键盘
+                    interactionSource = interactionSource,
                     placeholder = {
                         Text(
-                            "输入或拖拽呼号...",
+                            "点击输入呼号（可从CW历史拖拽）...",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                         )
@@ -2889,8 +2927,8 @@ private fun SimpleCallsignRecorder(
                         .fillMaxWidth()
                         .padding(top = 20.dp)
                         .border(
-                            width = if (draggedCallsign != null) 2.dp else 1.dp,
-                            color = if (draggedCallsign != null) {
+                            width = if (draggedCallsign != null || showKeyboard) 2.dp else 1.dp,
+                            color = if (draggedCallsign != null || showKeyboard) {
                                 MaterialTheme.colorScheme.primary
                             } else {
                                 MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
@@ -2901,7 +2939,7 @@ private fun SimpleCallsignRecorder(
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f),
-                        unfocusedContainerColor = if (draggedCallsign != null) {
+                        unfocusedContainerColor = if (draggedCallsign != null || showKeyboard) {
                             MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
                         } else {
                             MaterialTheme.colorScheme.surface.copy(alpha = 0.3f)
@@ -2955,6 +2993,7 @@ private fun SimpleCallsignRecorder(
                                                 .clickable {
                                                     inputText = suggestion
                                                     showSuggestions = false
+                                                    showKeyboard = false
                                                 },
                                             shape = RoundedCornerShape(4.dp),
                                             color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
@@ -3082,8 +3121,24 @@ private fun SimpleCallsignRecorder(
                     }
                 }
             }
+            
+            // 键盘显示时添加底部间距，避免被键盘遮挡
+            if (showKeyboard) {
+                Spacer(modifier = Modifier.height(260.dp))
+            }
         }
-
+        
+        // 内嵌键盘固定在整个界面底部（覆盖层）
+        if (showKeyboard) {
+            EmbeddedKeyboard(
+                onKeyPress = { key -> handleKeyPress(key) },
+                onBackspace = { handleBackspace() },
+                onDone = { saveCallsign() },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.BottomCenter)
+            )
+        }
     } // Box 关闭
 } // Surface 关闭
 } // SimpleCallsignRecorder 函数关闭
