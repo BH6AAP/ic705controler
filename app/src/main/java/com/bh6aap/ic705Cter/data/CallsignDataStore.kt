@@ -61,6 +61,8 @@ class CallsignDataStore(private val context: Context) {
             }
 
             LogManager.i("CallsignDataStore", "保存呼号: ${record.callsign}, 卫星: ${record.satelliteName}")
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
         } catch (e: Exception) {
             LogManager.e("CallsignDataStore", "保存呼号失败", e)
         }
@@ -100,6 +102,8 @@ class CallsignDataStore(private val context: Context) {
             }
 
             LogManager.i("CallsignDataStore", "删除呼号记录: $timestamp")
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
         } catch (e: Exception) {
             LogManager.e("CallsignDataStore", "删除呼号记录失败", e)
         }
@@ -112,6 +116,8 @@ class CallsignDataStore(private val context: Context) {
         try {
             context.dataStore.edit { it.clear() }
             LogManager.i("CallsignDataStore", "清空所有呼号记录")
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
         } catch (e: Exception) {
             LogManager.e("CallsignDataStore", "清空呼号记录失败", e)
         }
