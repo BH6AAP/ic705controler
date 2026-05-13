@@ -24,7 +24,10 @@ class BluetoothConnectionManager private constructor() {
         // 心跳参数，见 startHeartbeat 调用点的解释。Android 的
         // BluetoothSocket.isConnected() 在远端静默掉电时仍可能返回 true，
         // 靠主动轻量 CI-V 查询来识别"僵尸连接"并强制清理。
-        private const val HEARTBEAT_INTERVAL_MS = 30_000L
+        // 间隔 60s：tracking 的 500ms 频率更新占用 SPP 队列时，心跳
+        // 3s 查询可能超时；30s 间隔 + 2 次阈值 = 最短 63s 就会误判，
+        // 拉到 60s + 2 次 = 最短 123s，给忙期更多容忍。
+        private const val HEARTBEAT_INTERVAL_MS = 60_000L
         private const val HEARTBEAT_FAIL_THRESHOLD = 2
         private const val HEARTBEAT_QUERY_TIMEOUT_MS = 3_000L
 
