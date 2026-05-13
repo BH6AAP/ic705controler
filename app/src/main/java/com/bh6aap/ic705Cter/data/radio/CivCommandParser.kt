@@ -86,6 +86,10 @@ class CivCommandParser {
     
     /**
      * 解析频率指令
+     * 目前仅处理电台主动广播 / 查询响应（0x00 / 0x03），它们的载荷
+     * 是裸 5 字节 BCD。设置命令 0x25 在协议上虽然存在（VFO 1 字节 +
+     * BCD 5 字节），但未在 parseCommand 里派发——电台对 0x25 的回
+     * 应是无载荷的 0xFB ACK，由 CivController.processResponse 处理。
      * @return 频率解析结果；载荷无效时返回 null（上层应丢弃整帧）
      */
     private fun parseFrequencyCommand(
@@ -101,22 +105,10 @@ class CivCommandParser {
             return null
         }
 
-        // 提取频率数据（5字节BCD码）
+        // 提取 5 字节 BCD 频率数据
         val freqData = ByteArray(5)
-        val commandCode = command[4]
-
-        if (commandCode == 0x25.toByte()) {
-            // 0x25 在帧首多 1 字节 VFO 标识
-            if (dataLen < 6) {
-                LogManager.e(TAG, "【CIV解析】0x25命令频率数据长度不足: $dataLen")
-                return null
-            }
-            System.arraycopy(command, dataStartIndex + 1, freqData, 0, 5)
-            LogManager.d(TAG, "【CIV解析】0x25命令频率数据: ${bytesToHex(freqData)}")
-        } else {
-            System.arraycopy(command, dataStartIndex, freqData, 0, 5)
-            LogManager.d(TAG, "【CIV解析】其他命令频率数据: ${bytesToHex(freqData)}")
-        }
+        System.arraycopy(command, dataStartIndex, freqData, 0, 5)
+        LogManager.d(TAG, "【CIV解析】频率数据: ${bytesToHex(freqData)}")
 
         // 解码频率（带半字节校验）
         val decodedFreq = decodeFrequency(freqData)
