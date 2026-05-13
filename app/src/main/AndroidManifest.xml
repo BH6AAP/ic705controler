@@ -7,12 +7,12 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <!-- 存储权限 -->
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <!-- READ 仅在 Android 9 及更早需要（配合 WRITE_EXTERNAL_STORAGE） -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="28" />
-    <!-- Android 10+ 使用Scoped Storage，但导出到Download目录不需要额外权限 -->
-    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
-        tools:ignore="ScopedStorage" />
+    <!-- Android 10+ 统一走 MediaStore/SAF，无需 MANAGE_EXTERNAL_STORAGE -->
 
     <!-- GPS/位置权限 -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
@@ -28,7 +28,7 @@
 
     <!-- 后台存活权限 -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
@@ -41,7 +41,7 @@
     
     <application
         android:name=".IC705Application"
-        android:allowBackup="true"
+        android:allowBackup="false"
         android:usesCleartextTraffic="false"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -66,7 +66,7 @@
         <!-- MainActivity -->
         <activity
             android:name=".MainActivity"
-            android:exported="true"
+            android:exported="false"
             android:label="@string/app_name"
             android:theme="@style/Theme.Ic705controler"
             android:screenOrientation="portrait" />
@@ -95,10 +95,10 @@
             android:theme="@style/Theme.Ic705controler"
             android:screenOrientation="portrait" />
 
-        <!-- 前台服务 -->
+        <!-- 前台服务（维持 IC-705 蓝牙 SPP 连接） -->
         <service
             android:name=".service.BluetoothForegroundService"
-            android:foregroundServiceType="dataSync"
+            android:foregroundServiceType="connectedDevice"
             android:exported="false" />
 
         <!-- 过境通知广播接收器 -->

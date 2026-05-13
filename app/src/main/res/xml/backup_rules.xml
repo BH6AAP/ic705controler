@@ -1,13 +1,17 @@
-<?xml version="1.0" encoding="utf-8"?><!--
-   Sample backup rules file; uncomment and customize as necessary.
-   See https://developer.android.com/guide/topics/data/autobackup
-   for details.
-   Note: This file is ignored for devices older than API 31
-   See https://developer.android.com/about/versions/12/backup-restore
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+   Auto Backup 规则（API 23-30）。
+   security-fix-v2: 应用级 allowBackup 已设为 false，理论上此文件不再生效。
+   仍保留显式排除规则以防设备/厂商在 ROM 层启用强制备份。
 -->
 <full-backup-content>
-    <!--
-   <include domain="sharedpref" path="."/>
-   <exclude domain="sharedpref" path="device.xml"/>
--->
+    <exclude domain="database" path="ic705_database.db" />
+    <exclude domain="database" path="ic705_satellite_api.db" />
+    <exclude domain="database" path="ic705_tle_api.db" />
+    <exclude domain="database" path="ic705_transmitter_api.db" />
+    <exclude domain="sharedpref" path="bluetooth_device_preferences.xml" />
+    <exclude domain="sharedpref" path="editable_whitelist_prefs.xml" />
+    <exclude domain="sharedpref" path="app_settings.xml" />
+    <exclude domain="sharedpref" path="api_settings.xml" />
+    <exclude domain="file" path="datastore/" />
 </full-backup-content>
