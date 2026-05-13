@@ -28,8 +28,10 @@ class VfoQueryManager(private val connectionManager: BluetoothConnectionManager)
         val mode: String // 模式字符串，如 "USB"
     )
 
-    // 当前等待的响应
+    // 当前等待的响应 —— 蓝牙接收线程与协程并发访问，需 @Volatile
+    @Volatile
     private var pendingResponse: CompletableDeferred<ByteArray>? = null
+    @Volatile
     private var pendingCommandCode: Byte? = null
 
     /**
@@ -249,11 +251,17 @@ class VfoQueryManager(private val connectionManager: BluetoothConnectionManager)
      * @param response 响应数据
      */
     fun onResponseReceived(response: ByteArray) {
-        if (response.size < 5) {
+        if (response.size < 6) {
             LogManager.w(TAG, "【VFO查询】响应数据长度不足")
             return
         }
 
+        // 协议: response[2]=dst, response[3]=src。仅接受来自 IC-705 (0xA4) 的帧
+        val sourceAddr = response[3]
+        if (sourceAddr != 0xA4.toByte()) {
+            LogManager.w(TAG, "【VFO查询】响应源地址非 IC-705，忽略")
+            return
+        }
         val commandCode = response[4]
         val pendingCode = pendingCommandCode
 
