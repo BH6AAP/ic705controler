@@ -297,6 +297,30 @@ fun ApiSettingsDialog(
                                 isTesting = true
                                 testResult = TestResult(isSuccess = true, message = context.getString(R.string.api_saving), details = null)
 
+                                // 保存前先对三个 URL 都跑 SSRF/形式校验，
+                                // 拒绝非 https / 指向内网的 URL。之前只在
+                                // fetch 路径里校验，坏 URL 会先被持久化，
+                                // 下次冷启动又拉一次才暴露问题。
+                                val urlsToCheck = listOfNotNull(
+                                    satelliteApiUrl.trim().takeIf { it.isNotBlank() },
+                                    transmitterApiUrl.trim().takeIf { it.isNotBlank() },
+                                    tleApiUrl.trim().takeIf { it.isNotBlank() }
+                                )
+                                val invalidReason = urlsToCheck
+                                    .map { it to com.bh6aap.ic705Cter.data.api.SecureHttp.validateOutboundUrl(it) }
+                                    .firstOrNull { (_, r) -> r is com.bh6aap.ic705Cter.data.api.SecureHttp.UrlCheck.Reject }
+                                if (invalidReason != null) {
+                                    val (url, r) = invalidReason
+                                    val reason = (r as com.bh6aap.ic705Cter.data.api.SecureHttp.UrlCheck.Reject).reason
+                                    testResult = TestResult(
+                                        isSuccess = false,
+                                        message = context.getString(R.string.api_save_failed),
+                                        details = "$url → $reason"
+                                    )
+                                    isTesting = false
+                                    return@launch
+                                }
+
                                 // 保存API设置
                                 prefs.saveApiUrls(
                                     satelliteApiUrl = satelliteApiUrl.trim(),
