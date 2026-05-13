@@ -56,6 +56,7 @@ class CivController(private val sppConnector: BluetoothSppConnector) {
         const val MODE_FM: Byte = 0x05
         const val MODE_CW_R: Byte = 0x07
         const val MODE_RTTY_R: Byte = 0x08
+        const val MODE_DV: Byte = 0x17
 
         /**
          * IC-705 合规可发射频段（Hz, 闭区间）
@@ -430,7 +431,13 @@ class CivController(private val sppConnector: BluetoothSppConnector) {
             "FM" -> MODE_FM
             "CW-R" -> MODE_CW_R
             "RTTY-R" -> MODE_RTTY_R
-            else -> MODE_USB
+            "DV", "DSTAR", "D-STAR" -> MODE_DV
+            else -> {
+                // 未识别的模式不应静默降级为 USB：卫星 DV 转发器一旦被
+                // 当作 USB 发射会严重偏频，调用方应把失败冒泡给用户。
+                LogManager.e(TAG, "【CIV】未识别的模式: $modeStr，拒绝下发")
+                return false
+            }
         }
 
         // 先设置基本模式
