@@ -1,11 +1,15 @@
 package com.bh6aap.ic705Cter
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
+import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 
 /**
@@ -22,19 +26,27 @@ class PermissionManager(private val activity: ComponentActivity) {
         ) { permissions ->
             val granted = mutableListOf<String>()
             val denied = mutableListOf<String>()
+            val permanentlyDenied = mutableListOf<String>()
 
             permissions.forEach { (permission, isGranted) ->
                 if (isGranted) {
                     granted.add(permission)
                 } else {
                     denied.add(permission)
+                    // 用户拒绝且未来不再询问：shouldShowRationale 在拒绝后为 false
+                    // 表示系统不会再弹提示。区分这一类好让 UI 引导去设置而不是
+                    // 重复弹一个不会出现的对话框。
+                    if (!ActivityCompat.shouldShowRequestPermissionRationale(activity, permission)) {
+                        permanentlyDenied.add(permission)
+                    }
                 }
             }
 
             val result = PermissionResult(
                 allGranted = denied.isEmpty(),
                 grantedPermissions = granted,
-                deniedPermissions = denied
+                deniedPermissions = denied,
+                permanentlyDeniedPermissions = permanentlyDenied
             )
             permissionCallback?.invoke(result)
         }
@@ -142,13 +154,25 @@ class PermissionManager(private val activity: ComponentActivity) {
                 PermissionResult(
                     allGranted = true,
                     grantedPermissions = getRequiredPermissions().map { it.permission },
-                    deniedPermissions = emptyList()
+                    deniedPermissions = emptyList(),
+                    permanentlyDeniedPermissions = emptyList()
                 )
             )
         } else {
             permissionCallback = callback
             requestPermissionLauncher.launch(permissionsToRequest.toTypedArray())
         }
+    }
+
+    /**
+     * 跳转到本应用的系统"应用信息"页，让用户手动开启被永久拒绝的权限。
+     */
+    fun openAppSettings() {
+        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+            data = Uri.fromParts("package", activity.packageName, null)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        activity.startActivity(intent)
     }
 
     /**
@@ -213,5 +237,11 @@ data class PermissionItem(
 data class PermissionResult(
     val allGranted: Boolean,
     val grantedPermissions: List<String>,
-    val deniedPermissions: List<String>
+    val deniedPermissions: List<String>,
+    /**
+     * 在本次请求中被用户标记为"不再询问"的权限。出现在这里的权限再次
+     * 调用 launch() 系统也不会显示对话框，只能通过 openAppSettings() 引导
+     * 用户去系统设置里手动开启。
+     */
+    val permanentlyDeniedPermissions: List<String> = emptyList()
 )
