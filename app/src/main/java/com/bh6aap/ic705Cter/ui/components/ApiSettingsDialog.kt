@@ -447,10 +447,24 @@ suspend fun fetchCustomTleData(context: Context, url: String): Boolean {
             val satellites = parseTleTextData(body)
 
             if (satellites.isNotEmpty()) {
-                // 保存到自定义数据库
+                // 保存到自定义数据库（保持原有 custom DB 行为）以及默认数据库。
+                // 之前只写 custom DB，但 SatellitePassCalculator / Tracking
+                // 直接读默认 DB（DatabaseHelper），自定义 URL 配了实际等于
+                // 没配。这里双写让消费方不必走 DatabaseRouter 也能拿到数据。
                 val customDbManager = CustomApiDatabaseManager.getInstance(context)
                 customDbManager.saveSatellites(satellites)
-                LogManager.i("ApiSettings", "成功保存 ${satellites.size} 颗卫星到自定义数据库")
+                val defaultDb = com.bh6aap.ic705Cter.data.database.DatabaseHelper.getInstance(context)
+                defaultDb.deleteAllSatellites()
+                defaultDb.insertSatellites(satellites)
+                defaultDb.insertSyncRecord(
+                    com.bh6aap.ic705Cter.data.database.entity.SyncRecordEntity(
+                        syncType = "tle_celestrak",
+                        syncTime = System.currentTimeMillis(),
+                        recordCount = satellites.size,
+                        source = url
+                    )
+                )
+                LogManager.i("ApiSettings", "成功保存 ${satellites.size} 颗卫星到自定义+默认数据库")
                 return true
             } else {
                 LogManager.w("ApiSettings", "未解析到任何卫星数据")
