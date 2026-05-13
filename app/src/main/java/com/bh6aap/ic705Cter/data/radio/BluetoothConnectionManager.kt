@@ -4,6 +4,7 @@ import android.bluetooth.BluetoothDevice
 import com.bh6aap.ic705Cter.util.LogManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -64,6 +65,11 @@ class BluetoothConnectionManager private constructor() {
 
     // VFO状态跟踪
     var currentVfo = "A"
+
+    // startStateSync 的 collector Job；重连时必须取消旧的，避免多个
+    // collector 并发写 _vfoAFrequency 等 StateFlow。
+    @Volatile
+    private var stateSyncJob: Job? = null
 
     /**
      * 连接到蓝牙设备
@@ -141,30 +147,21 @@ class BluetoothConnectionManager private constructor() {
 
     /**
      * 启动状态同步，将CivController的状态同步到BluetoothConnectionManager
-     * 优化：合并到一个coroutine中，减少资源占用
+     * 每次调用都会先取消上一个 collector，避免多次重连后累积多个并发 collector。
      */
     private fun startStateSync(civController: CivController) {
-        coroutineScope.launch {
-            // 使用combine合并多个flow，减少同时运行的coroutine数量
+        stateSyncJob?.cancel()
+        stateSyncJob = coroutineScope.launch {
             kotlinx.coroutines.flow.combine(
                 civController.vfoAFrequency,
                 civController.vfoAMode,
                 civController.vfoBFrequency,
                 civController.vfoBMode
             ) { vfoAFreq, vfoAMode, vfoBFreq, vfoBMode ->
-                // 批量更新状态
-                if (_vfoAFrequency.value != vfoAFreq) {
-                    _vfoAFrequency.value = vfoAFreq
-                }
-                if (_vfoAMode.value != vfoAMode) {
-                    _vfoAMode.value = vfoAMode
-                }
-                if (_vfoBFrequency.value != vfoBFreq) {
-                    _vfoBFrequency.value = vfoBFreq
-                }
-                if (_vfoBMode.value != vfoBMode) {
-                    _vfoBMode.value = vfoBMode
-                }
+                if (_vfoAFrequency.value != vfoAFreq) _vfoAFrequency.value = vfoAFreq
+                if (_vfoAMode.value != vfoAMode) _vfoAMode.value = vfoAMode
+                if (_vfoBFrequency.value != vfoBFreq) _vfoBFrequency.value = vfoBFreq
+                if (_vfoBMode.value != vfoBMode) _vfoBMode.value = vfoBMode
             }.collect { }
         }
     }
@@ -221,6 +218,10 @@ class BluetoothConnectionManager private constructor() {
      */
     private fun cleanupConnection() {
         LogManager.i(TAG, "【蓝牙连接】清理连接资源")
+
+        // 取消 state-sync collector，防止后续累积
+        stateSyncJob?.cancel()
+        stateSyncJob = null
 
         // 清理连接器引用
         _currentConnector.value = null
