@@ -153,17 +153,29 @@ fun BluetoothDeviceDrawer(
                                 )
                             }
                         } else if (devices.isEmpty()) {
-                            Box(
+                            Column(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(100.dp),
-                                contentAlignment = Alignment.Center
+                                    .height(120.dp),
+                                verticalArrangement = Arrangement.Center,
+                                horizontalAlignment = Alignment.CenterHorizontally
                             ) {
                                 Text(
                                     text = stringResource(R.string.bluetooth_no_paired_devices),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                OutlinedButton(
+                                    onClick = {
+                                        context.startActivity(
+                                            android.content.Intent(android.provider.Settings.ACTION_BLUETOOTH_SETTINGS)
+                                                .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                                        )
+                                    }
+                                ) {
+                                    Text(stringResource(R.string.bluetooth_open_system_settings))
+                                }
                             }
                         } else {
                             LazyColumn(

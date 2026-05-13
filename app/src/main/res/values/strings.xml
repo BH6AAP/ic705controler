@@ -245,6 +245,7 @@
     <string name="bluetooth_device_done">完成</string>
     <string name="bluetooth_permission_required">需要蓝牙权限</string>
     <string name="bluetooth_no_paired_devices">暂无已配对的蓝牙设备</string>
+    <string name="bluetooth_open_system_settings">打开系统蓝牙设置</string>
     <string name="bluetooth_device_unknown">未知设备</string>
     <string name="bluetooth_device_default_label">默认</string>
     <string name="bluetooth_device_icom_label">ICOM</string>
