@@ -21,6 +21,13 @@ class BluetoothConnectionManager private constructor() {
     companion object {
         private const val TAG = "BluetoothConnectionManager"
 
+        // 心跳参数，见 startHeartbeat 调用点的解释。Android 的
+        // BluetoothSocket.isConnected() 在远端静默掉电时仍可能返回 true，
+        // 靠主动轻量 CI-V 查询来识别"僵尸连接"并强制清理。
+        private const val HEARTBEAT_INTERVAL_MS = 30_000L
+        private const val HEARTBEAT_FAIL_THRESHOLD = 2
+        private const val HEARTBEAT_QUERY_TIMEOUT_MS = 3_000L
+
         // Volatile ensures the JVM memory model guarantees visibility of the write
         // across all threads; double-checked locking removes the lock overhead on
         // the hot path after initialisation.
@@ -75,6 +82,8 @@ class BluetoothConnectionManager private constructor() {
     // collector 并发写 _vfoAFrequency 等 StateFlow。
     @Volatile
     private var stateSyncJob: Job? = null
+    @Volatile
+    private var heartbeatJob: Job? = null
 
     /**
      * 连接到蓝牙设备
@@ -137,6 +146,13 @@ class BluetoothConnectionManager private constructor() {
                     delay(500) // 等待连接稳定
                     ensureSplitModeEnabled()
                 }
+
+                // 启动心跳：BluetoothSppConnector 自带的 isConnected 在远端
+                // 静默掉电 / 超出范围时仍可能返回 true（Android 已知问题），
+                // 让"连接灯"长时间撒谎。这里每 HEARTBEAT_INTERVAL_MS 主动
+                // 跑一次轻量 CI-V 查询；连续 HEARTBEAT_FAIL_THRESHOLD 次失
+                // 败才强制 cleanupConnection，避免对偶尔的瞬时丢包过敏。
+                startHeartbeat(civController)
             } else {
                 LogManager.e(TAG, "【蓝牙连接】连接失败")
                 _civController.value = null
@@ -168,6 +184,42 @@ class BluetoothConnectionManager private constructor() {
                 if (_vfoBFrequency.value != vfoBFreq) _vfoBFrequency.value = vfoBFreq
                 if (_vfoBMode.value != vfoBMode) _vfoBMode.value = vfoBMode
             }.collect { }
+        }
+    }
+
+    private fun startHeartbeat(civController: CivController) {
+        heartbeatJob?.cancel()
+        heartbeatJob = coroutineScope.launch {
+            var consecutiveFails = 0
+            while (true) {
+                delay(HEARTBEAT_INTERVAL_MS)
+                // 还是当前连接器吗？collector 可能在重连后被换掉
+                if (_civController.value !== civController) return@launch
+
+                val ok = try {
+                    kotlinx.coroutines.withTimeoutOrNull(HEARTBEAT_QUERY_TIMEOUT_MS) {
+                        civController.getCurrentVfoFrequency() > 0
+                    } ?: false
+                } catch (e: Exception) {
+                    LogManager.w(TAG, "【蓝牙连接】心跳查询异常: ${e.message}")
+                    false
+                }
+
+                if (ok) {
+                    consecutiveFails = 0
+                } else {
+                    consecutiveFails++
+                    LogManager.w(TAG, "【蓝牙连接】心跳失败 ($consecutiveFails / $HEARTBEAT_FAIL_THRESHOLD)")
+                    if (consecutiveFails >= HEARTBEAT_FAIL_THRESHOLD) {
+                        LogManager.e(TAG, "【蓝牙连接】心跳连续失败，强制断开")
+                        // 主动 disconnect 比直接 cleanupConnection 更彻底：会
+                        // 试图关 Split + 关 socket，再走回 connector 回调清理。
+                        try { _currentConnector.value?.disconnect() } catch (_: Exception) {}
+                        cleanupConnection()
+                        return@launch
+                    }
+                }
+            }
         }
     }
 
@@ -227,6 +279,8 @@ class BluetoothConnectionManager private constructor() {
         // 取消 state-sync collector，防止后续累积
         stateSyncJob?.cancel()
         stateSyncJob = null
+        heartbeatJob?.cancel()
+        heartbeatJob = null
 
         // 清理连接器引用
         _currentConnector.value = null
