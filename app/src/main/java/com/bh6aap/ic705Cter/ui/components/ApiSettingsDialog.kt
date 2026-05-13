@@ -451,11 +451,12 @@ suspend fun fetchCustomTleData(context: Context, url: String): Boolean {
                 // 之前只写 custom DB，但 SatellitePassCalculator / Tracking
                 // 直接读默认 DB（DatabaseHelper），自定义 URL 配了实际等于
                 // 没配。这里双写让消费方不必走 DatabaseRouter 也能拿到数据。
+                // 默认 DB 用 replaceAllSatellites 以原子事务替换，避免
+                // delete-then-insert 中间进程挂掉留下空库。
                 val customDbManager = CustomApiDatabaseManager.getInstance(context)
                 customDbManager.saveSatellites(satellites)
                 val defaultDb = com.bh6aap.ic705Cter.data.database.DatabaseHelper.getInstance(context)
-                defaultDb.deleteAllSatellites()
-                defaultDb.insertSatellites(satellites)
+                defaultDb.replaceAllSatellites(satellites)
                 defaultDb.insertSyncRecord(
                     com.bh6aap.ic705Cter.data.database.entity.SyncRecordEntity(
                         syncType = "tle_celestrak",
