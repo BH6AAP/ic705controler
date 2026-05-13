@@ -267,15 +267,17 @@ class VfoQueryManager(private val connectionManager: BluetoothConnectionManager)
 
         LogManager.d(TAG, "【VFO查询】收到响应，指令代码: 0x${String.format("%02X", commandCode)}, 等待的指令: ${if (pendingCode != null) "0x${String.format("%02X", pendingCode)}" else "null"}")
 
-        // 检查是否是我们正在等待的响应（包括 0xFB 成功确认响应）
+        // 检查是否是我们正在等待的响应。0xFB/0xFA 分别是 IC-705 的
+        // ACK/NACK；两种都要算作终态以免调用方一直等到 2s 超时。
         val isFbResponse = commandCode == 0xFB.toByte()
-        if (pendingCode != null && (commandCode == pendingCode || isFbResponse)) {
+        val isFaResponse = commandCode == 0xFA.toByte()
+        if (pendingCode != null && (commandCode == pendingCode || isFbResponse || isFaResponse)) {
             val deferred = pendingResponse
             if (deferred != null && !deferred.isCompleted) {
-                if (isFbResponse) {
-                    LogManager.i(TAG, "【VFO查询】收到 0xFB 成功确认，完成等待的指令 0x${String.format("%02X", pendingCode)}")
-                } else {
-                    LogManager.i(TAG, "【VFO查询】完成等待，指令 0x${String.format("%02X", commandCode)}")
+                when {
+                    isFbResponse -> LogManager.i(TAG, "【VFO查询】收到 0xFB 成功确认，完成等待的指令 0x${String.format("%02X", pendingCode)}")
+                    isFaResponse -> LogManager.w(TAG, "【VFO查询】收到 0xFA 失败确认，完成等待的指令 0x${String.format("%02X", pendingCode)}")
+                    else -> LogManager.i(TAG, "【VFO查询】完成等待，指令 0x${String.format("%02X", commandCode)}")
                 }
                 try {
                     deferred.complete(response)

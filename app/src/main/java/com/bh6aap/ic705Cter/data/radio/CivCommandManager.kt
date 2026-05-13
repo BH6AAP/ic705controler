@@ -429,13 +429,18 @@ class CivCommandManager(private val sppConnector: BluetoothSppConnector) {
         // 如果有等待的Deferred，完成它
         LogManager.d(TAG, "【CIV指令】检查等待状态 - pendingResponse: ${pendingResponse != null}, isCompleted: ${pendingResponse?.isCompleted}, pendingCommandCode: 0x${String.format("%02X", pendingCommandCode ?: 0)}")
         if (pendingResponse != null && !pendingResponse!!.isCompleted) {
-            // 检查响应是否匹配等待的命令
-            // 0xFB是忙/确认响应，可以视为对任何命令的成功响应
+            // 0xFB/0xFA 分别是 ACK/NACK；都视为对当前命令的终态回应，
+            // 以便调用方尽快拿到结果（而不是等 2s 超时）。
             val commandMatch = pendingCommandCode == commandCode
             val isFbResponse = commandCode == 0xFB.toByte()
-            LogManager.d(TAG, "【CIV指令】命令匹配: $commandMatch, 0xFB响应: $isFbResponse")
-            if (commandMatch || isFbResponse) {
-                LogManager.i(TAG, "【CIV指令】完成等待的Deferred")
+            val isFaResponse = commandCode == 0xFA.toByte()
+            LogManager.d(TAG, "【CIV指令】命令匹配: $commandMatch, 0xFB响应: $isFbResponse, 0xFA响应: $isFaResponse")
+            if (commandMatch || isFbResponse || isFaResponse) {
+                if (isFaResponse) {
+                    LogManager.w(TAG, "【CIV指令】收到 0xFA 失败确认，完成等待的Deferred")
+                } else {
+                    LogManager.i(TAG, "【CIV指令】完成等待的Deferred")
+                }
                 pendingResponse!!.complete(response)
             } else {
                 LogManager.w(TAG, "【CIV指令】响应不匹配 - 等待: 0x${String.format("%02X", pendingCommandCode ?: 0)}, 收到: 0x${String.format("%02X", commandCode)}")
