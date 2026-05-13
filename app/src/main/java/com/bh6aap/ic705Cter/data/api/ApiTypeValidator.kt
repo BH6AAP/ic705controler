@@ -94,10 +94,14 @@ object ApiTypeValidator {
                 }
 
                 if (detectedType == ApiType.UNKNOWN) {
+                    // 之前 UNKNOWN 被当作硬错误，但很多实际源（AMSAT / 自建
+                    // mirror / 非严格三行 TLE）会落到这里。让用户能在"警告"
+                    // 下继续保存：isValid=true + message 明确提示；
+                    // expectedType 匹配不上时仍然走 INVALID 分支。
                     return@withContext ValidationResult(
-                        isValid = false,
+                        isValid = true,
                         apiType = ApiType.UNKNOWN,
-                        message = "无法识别API数据类型，请检查API格式",
+                        message = "API 响应可访问，但无法自动识别格式 (警告)",
                         sampleData = body.take(200)
                     )
                 }
