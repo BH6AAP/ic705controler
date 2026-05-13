@@ -22,7 +22,7 @@ class SatelliteTrackingController(
         private const val VFO_SETTLE_TIME_MS = 500L // 波轮避让后重新接管的时间（500ms，更快接管）
         private const val FREQUENCY_CHANGE_THRESHOLD = 3 // 短时间内频率变化次数阈值
         private const val FREQUENCY_CHANGE_WINDOW_MS = 500L // 频率变化检测窗口（500ms）
-        private const val FREQUENCY_UPDATE_INTERVAL_MS = 100L // 频率更新间隔（100ms，提高响应速度）
+        private const val FREQUENCY_UPDATE_INTERVAL_MS = 500L // 频率更新节拍 (500ms)
         private const val DOPPLER_THRESHOLD_HZ = 1.0 // 多普勒变化阈值（1Hz），频率变化超过1Hz才更新
 
         private const val USER_ACTIVITY_TIMEOUT_MS = 150L // 用户活动超时时间（150ms无广播则认为用户停止操作，更快接管）
@@ -1413,7 +1413,7 @@ class SatelliteTrackingController(
                 if (shouldUpdate) {
                     updateFrequencies()
                 }
-                delay(FREQUENCY_UPDATE_INTERVAL_MS) // 1秒更新一次
+                delay(FREQUENCY_UPDATE_INTERVAL_MS) // 按 FREQUENCY_UPDATE_INTERVAL_MS 节拍更新
             }
         }
     }
