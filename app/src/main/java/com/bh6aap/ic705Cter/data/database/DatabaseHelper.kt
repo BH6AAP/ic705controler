@@ -331,19 +331,30 @@ class DatabaseHelper private constructor(context: Context) : SQLiteOpenHelper(
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
-        LogManager.w(LogManager.TAG_DATABASE, "【数据库】升级数据库版本 $oldVersion -> $newVersion")
-        db.execSQL("DROP TABLE IF EXISTS $TABLE_SATELLITES")
-        db.execSQL("DROP TABLE IF EXISTS $TABLE_STATIONS")
-        db.execSQL("DROP TABLE IF EXISTS $TABLE_PASS_PREDICTIONS")
-        db.execSQL("DROP TABLE IF EXISTS $TABLE_SYNC_RECORDS")
-        db.execSQL("DROP TABLE IF EXISTS $TABLE_TRANSMITTERS")
-        db.execSQL("DROP TABLE IF EXISTS $TABLE_SATELLITE_INFO")
-        db.execSQL("DROP TABLE IF EXISTS $TABLE_FREQUENCY_PRESETS")
-        db.execSQL("DROP TABLE IF EXISTS $TABLE_CW_PRESETS")
-        db.execSQL("DROP TABLE IF EXISTS $TABLE_CUSTOM_TRANSMITTERS")
-        db.execSQL("DROP TABLE IF EXISTS $TABLE_SETTINGS")
-        db.execSQL("DROP TABLE IF EXISTS $TABLE_MEMOS")
-        db.execSQL("DROP TABLE IF EXISTS $TABLE_PASS_CACHE")
+        LogManager.w(LogManager.TAG_DATABASE, "【数据库】升级数据库版本 $oldVersion -> $newVersion (增量迁移)")
+        // 只 DROP 可通过网络重新拉取的"远端缓存类"表；用户私有数据
+        // (settings/stations/cw_presets/frequency_presets/custom_transmitters/memos)
+        // 一律保留——onCreate 中所有 CREATE TABLE 均使用 IF NOT EXISTS，
+        // 因此无需删除即可被重新声明。
+        val rebuildable = listOf(
+            TABLE_SATELLITES,
+            TABLE_PASS_PREDICTIONS,
+            TABLE_SYNC_RECORDS,
+            TABLE_TRANSMITTERS,
+            TABLE_SATELLITE_INFO,
+            TABLE_PASS_CACHE
+        )
+        for (table in rebuildable) {
+            db.execSQL("DROP TABLE IF EXISTS $table")
+        }
+        onCreate(db)
+        LogManager.i(LogManager.TAG_DATABASE, "【数据库】升级完成，用户数据保留")
+    }
+
+    override fun onDowngrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
+        LogManager.w(LogManager.TAG_DATABASE, "【数据库】检测到降级 $oldVersion -> $newVersion，按升级流程容错处理")
+        // 默认 SQLiteOpenHelper 在降级时会抛 SQLiteException，导致应用启动失败。
+        // 这里采用最保守策略：不破坏用户数据，仅尝试再次保证 schema 完整。
         onCreate(db)
     }
 
