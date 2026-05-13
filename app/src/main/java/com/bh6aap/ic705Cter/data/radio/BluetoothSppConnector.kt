@@ -10,6 +10,7 @@ import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
 import java.util.*
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.min
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -91,9 +92,42 @@ class BluetoothSppConnector(private val bluetoothDevice: BluetoothDevice) {
 
             LogManager.d(TAG, "【蓝牙SPP】正在连接到RFCOMM服务...")
 
-            // 连接到设备（带超时，避免悬挂）
-            kotlinx.coroutines.withTimeout(10_000L) {
-                bluetoothSocket?.connect()
+            // 连接到设备：BluetoothSocket.connect() 是阻塞 IO 调用，
+            // kotlinx withTimeout 的协程取消是协作式的，无法真正中断它。
+            // 启动一个独立的看门狗线程，在 10 秒后强制 close socket，
+            // 让阻塞的 connect() 抛 IOException 而提前返回。
+            val timedOut = AtomicBoolean(false)
+            val socketRef = bluetoothSocket
+            val connectDone = AtomicBoolean(false)
+            val watchdog = Thread({
+                try {
+                    Thread.sleep(10_000L)
+                } catch (_: InterruptedException) {
+                    return@Thread
+                }
+                if (!connectDone.get()) {
+                    timedOut.set(true)
+                    try {
+                        socketRef?.close()
+                    } catch (_: Exception) {
+                    }
+                }
+            }, "BluetoothSppConnector-watchdog").apply {
+                isDaemon = true
+                start()
+            }
+            try {
+                socketRef?.connect()
+            } finally {
+                connectDone.set(true)
+                watchdog.interrupt()
+            }
+            if (timedOut.get()) {
+                LogManager.e(TAG, "【蓝牙SPP】连接超时（10s），已强制关闭 socket")
+                _connectionState.value = ConnectionState.ERROR
+                callback?.onConnectionStateChanged(ConnectionState.ERROR)
+                disconnect()
+                return@withContext false
             }
             
             LogManager.d(TAG, "【蓝牙SPP】连接成功，获取输入输出流")
