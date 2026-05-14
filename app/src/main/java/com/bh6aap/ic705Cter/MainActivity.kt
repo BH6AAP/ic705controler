@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -127,12 +128,15 @@ class MainActivity : BaseActivity() {
             Ic705controlerTheme {
                 var stationData by remember { mutableStateOf<StationEntity?>(null) }
                 var maidenheadGrid by remember { mutableStateOf("") }
-                var showBluetoothDialog by remember { mutableStateOf(false) }
+                // Dialog 打开/关闭状态走 rememberSaveable，屏幕旋转 / 低内存回
+                // 收后用户再切回前台时保留之前打开的弹窗，避免"正在操作被
+                // 系统无声推倒重来"。
+                var showBluetoothDialog by rememberSaveable { mutableStateOf(false) }
                 var connectionState by remember { mutableStateOf(bluetoothConnectionManager.getConnectionState()) }
                 val devicePreference = remember { BluetoothDevicePreference.getInstance(this@MainActivity) }
-                
+
                 // 退出确认对话框状态
-                var showExitDialog by remember { mutableStateOf(false) }
+                var showExitDialog by rememberSaveable { mutableStateOf(false) }
                 
                 // 处理返回键 - 显示退出确认对话框
                 BackHandler {
@@ -168,9 +172,9 @@ class MainActivity : BaseActivity() {
                 // 注意：VFO频率和模式不在主界面显示，由SatelliteTrackingActivity管理
                 var tleUpdateTime by remember { mutableStateOf(getString(R.string.main_tle_not_updated)) }
                 var transmitterUpdateTime by remember { mutableStateOf(getString(R.string.main_tle_not_updated)) }
-                var showSatelliteDialog by remember { mutableStateOf(false) }
+                var showSatelliteDialog by rememberSaveable { mutableStateOf(false) }
                 var refreshStationTrigger by remember { mutableStateOf(0) }
-                var showStationListDialog by remember { mutableStateOf(false) }
+                var showStationListDialog by rememberSaveable { mutableStateOf(false) }
 
                 // 从数据库加载TLE更新时间（支持 celestrak 和 satnogs）
                 LaunchedEffect(Unit) {
@@ -201,6 +205,24 @@ class MainActivity : BaseActivity() {
                 LaunchedEffect(Unit) {
                     bluetoothConnectionManager.connectionState.collect {
                         connectionState = it
+                    }
+                }
+
+                // 监听 CI-V 命令失败 / 超时事件，弹 Toast 让用户能感知，
+                // 否则 UI 显示的频率/模式已变但电台其实未执行。
+                // 用 2 秒的 distinct 节流：tracking 循环在带外频段上会以
+                // 500ms 频次 emit FrequencyOutOfRange，不节流会连环弹 Toast
+                // 把屏幕堵住。
+                LaunchedEffect(Unit) {
+                    var lastDesc: String? = null
+                    var lastAt = 0L
+                    bluetoothConnectionManager.commandEvents.collect { event ->
+                        val now = System.currentTimeMillis()
+                        if (event.description != lastDesc || now - lastAt > 2_000L) {
+                            Toast.makeText(this@MainActivity, event.description, Toast.LENGTH_SHORT).show()
+                            lastDesc = event.description
+                            lastAt = now
+                        }
                     }
                 }
 
@@ -455,7 +477,7 @@ class MainActivity : BaseActivity() {
                             Surface(
                                 modifier = Modifier
                                     .size(connectionCardHeight)
-                                    .clickable {
+                                    .clickable(enabled = isBtConnected) {
                                         // 先设置电台模式为CW，然后跳转到摩尔斯页面
                                         lifecycleScope.launch {
                                             val civController = bluetoothConnectionManager.civController.value
@@ -466,10 +488,22 @@ class MainActivity : BaseActivity() {
                                                 if (vfoASuccess && vfoBSuccess) {
                                                     LogManager.i("MainActivity", "【主界面】设置电台模式为CW成功")
                                                 } else {
+                                                    Toast.makeText(
+                                                        this@MainActivity,
+                                                        "设置 CW 模式失败，请检查电台连接",
+                                                        Toast.LENGTH_SHORT
+                                                    ).show()
                                                     LogManager.w("MainActivity", "【主界面】设置电台模式为CW失败或电台未连接")
+                                                    return@launch
                                                 }
                                             } else {
+                                                Toast.makeText(
+                                                    this@MainActivity,
+                                                    "请先连接 IC-705",
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
                                                 LogManager.w("MainActivity", "【主界面】CIV控制器未初始化，无法设置CW模式")
+                                                return@launch
                                             }
                                             // 跳转到摩尔斯页面
                                             val intent = Intent(this@MainActivity, MorseCodeActivity::class.java)
@@ -1690,24 +1724,48 @@ fun SatellitePassList(
                                             pass.aosTime
                                         )
                                         // 调度通知
-                                        val scheduled = PassNotificationManager.schedulePassNotification(
+                                        val scheduleResult = PassNotificationManager.schedulePassNotification(
                                             context,
                                             pass,
                                             displayName,
                                             reminderMinutes
                                         )
-                                        if (scheduled) {
-                                            Toast.makeText(
-                                                context,
-                                                "已设置提醒：${displayName} 过境前${reminderMinutes}分钟通知",
-                                                Toast.LENGTH_SHORT
-                                            ).show()
-                                        } else {
-                                            Toast.makeText(
-                                                context,
-                                                "已设置提醒（非精确）：${displayName} 过境前${reminderMinutes}分钟通知",
-                                                Toast.LENGTH_SHORT
-                                            ).show()
+                                        when (scheduleResult) {
+                                            is PassNotificationManager.ScheduleResult.Exact ->
+                                                Toast.makeText(
+                                                    context,
+                                                    "已设置提醒：${displayName} 过境前${reminderMinutes}分钟通知",
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+                                            is PassNotificationManager.ScheduleResult.Inexact ->
+                                                Toast.makeText(
+                                                    context,
+                                                    "已设置提醒（非精确）：${displayName} 过境前${reminderMinutes}分钟通知",
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+                                            is PassNotificationManager.ScheduleResult.PassTooSoon -> {
+                                                // 过境时刻在 reminderMinutes 内：恢复 UI、撤销 enableNotification
+                                                notificationDataStore.disableNotification(
+                                                    pass.noradId,
+                                                    pass.aosTime
+                                                )
+                                                Toast.makeText(
+                                                    context,
+                                                    "无法设置提醒：${displayName} 过境时刻已临近，少于${reminderMinutes}分钟",
+                                                    Toast.LENGTH_LONG
+                                                ).show()
+                                            }
+                                            is PassNotificationManager.ScheduleResult.Failed -> {
+                                                notificationDataStore.disableNotification(
+                                                    pass.noradId,
+                                                    pass.aosTime
+                                                )
+                                                Toast.makeText(
+                                                    context,
+                                                    "设置提醒失败：${scheduleResult.reason}",
+                                                    Toast.LENGTH_LONG
+                                                ).show()
+                                            }
                                         }
                                     } else {
                                         // 禁用通知

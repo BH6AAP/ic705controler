@@ -175,6 +175,9 @@ class SatelliteTrackingActivity : BaseActivity() {
             trackingController.stopTrackingWithoutReset()
             LogManager.i("SatelliteTracking", "界面销毁，蓝牙未连接，停止跟踪但不重置电台模式")
         }
+        // 取消 controllerScope 下所有挂起的协程，否则 StateFlow collector
+        // 会在 Activity 重建后累积，多套频率写入命令同时排队到 SPP 发送队列。
+        trackingController.cleanup()
     }
 
     companion object {
@@ -358,13 +361,17 @@ private fun SatelliteTrackingScreen(
             }
 
             // 每500ms更新一次卫星位置（优化：从100ms增加到500ms，减少CPU和UI重组）
+            // updateCache=false：DopplerDataCache 由后台 positionJob 专职写入，
+            // 避免 Activity + controller 双写让 PredictiveDopplerCalculator
+            // 的 history deque 以 2x 速率累积、预测斜率失真。
             while (isActive) {
                 // 获取当前选中的下行频率（Hz），默认使用435MHz
                 val downlinkFreqHz = selectedTransmitter?.downlinkLow?.toDouble() ?: 435e6
                 val positions = satelliteTracker.calculateMultiplePositions(
                     satellites = filteredSatellites,
                     targetSatelliteId = targetSatelliteId,
-                    downlinkFreqHz = downlinkFreqHz
+                    downlinkFreqHz = downlinkFreqHz,
+                    updateCache = false
                 )
                 satellitePositions = positions
                 delay(500) // 优化：降低更新频率以减少CPU占用和UI重组

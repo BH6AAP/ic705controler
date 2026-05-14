@@ -84,26 +84,49 @@ object PassNotificationManager {
     }
 
     /**
+     * schedulePassNotification 的返回结果。
+     * 之前一律用 Boolean，"过境已过期" 被 UI 误解成 "调度成功（非精确）"。
+     */
+    sealed class ScheduleResult {
+        /** 已成功用精确闹钟调度 */
+        object Exact : ScheduleResult()
+        /** 已成功调度，但用的是非精确闹钟（无 SCHEDULE_EXACT_ALARM 权限） */
+        object Inexact : ScheduleResult()
+        /** 过境时刻已经在 reminderMinutes 之内，无法提前 N 分钟提醒 */
+        object PassTooSoon : ScheduleResult()
+        /** AlarmManager 抛异常，e.g. SecurityException、SDK bug */
+        data class Failed(val reason: String) : ScheduleResult()
+    }
+
+    /**
      * 调度过境提醒
      * @param context 上下文
      * @param pass 过境信息
      * @param satelliteName 卫星名称
      * @param reminderMinutes 提前提醒时间（分钟），默认5分钟
-     * @return 是否调度成功
      */
     fun schedulePassNotification(
         context: Context,
         pass: SatellitePassCalculator.SatellitePass,
         satelliteName: String,
         reminderMinutes: Int = 5
-    ): Boolean {
+    ): ScheduleResult {
+        // Android 13+ 用户可能拒绝了 POST_NOTIFICATIONS；通知通道也可能被
+        // 用户禁用。提前判断让 UI 能给出 actionable 反馈，而不是悄悄注册一
+        // 个发不出来的闹钟。
+        if (!androidx.core.app.NotificationManagerCompat.from(context).areNotificationsEnabled()) {
+            LogManager.w("PassNotification", "通知被系统禁用，无法调度: $satelliteName")
+            return ScheduleResult.Failed("通知权限被禁用，请在系统设置开启")
+        }
+
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         val notificationTime = pass.aosTime - reminderMinutes * 60 * 1000 // 过境前 reminderMinutes 分钟
 
-        // 如果过境时间已经过去，不调度通知
+        // 如果应当通知的时刻已经过去，告诉调用方"来不及了"，让 UI 用 toast 提示
+        // 而不是把 false 当作"已设置（非精确）"。
         if (notificationTime < System.currentTimeMillis()) {
             LogManager.w("PassNotification", "过境时间已过，不调度通知: $satelliteName")
-            return false
+            return ScheduleResult.PassTooSoon
         }
 
         val intent = Intent(context, PassNotificationReceiver::class.java).apply {
@@ -130,16 +153,16 @@ object PassNotificationManager {
                         pendingIntent
                     )
                     LogManager.i("PassNotification", "已调度精确过境提醒: $satelliteName 在 ${formatTime(notificationTime)}")
-                    true
+                    ScheduleResult.Exact
                 } else {
-                    // 如果没有精确闹钟权限，使用非精确闹钟（可能会有几分钟延迟）
+                    // 没有精确闹钟权限，使用非精确闹钟（可能延迟几分钟）
                     alarmManager.setAndAllowWhileIdle(
                         AlarmManager.RTC_WAKEUP,
                         notificationTime,
                         pendingIntent
                     )
                     LogManager.w("PassNotification", "无精确闹钟权限，使用非精确提醒: $satelliteName")
-                    false
+                    ScheduleResult.Inexact
                 }
             } else {
                 alarmManager.setExactAndAllowWhileIdle(
@@ -148,11 +171,11 @@ object PassNotificationManager {
                     pendingIntent
                 )
                 LogManager.i("PassNotification", "已调度过境提醒: $satelliteName 在 ${formatTime(notificationTime)}")
-                true
+                ScheduleResult.Exact
             }
         } catch (e: Exception) {
             LogManager.e("PassNotification", "调度过境提醒失败: $satelliteName", e)
-            false
+            ScheduleResult.Failed(e.message ?: e.javaClass.simpleName)
         }
     }
 

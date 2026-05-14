@@ -164,14 +164,24 @@ fun LanguageSettingsDialog(
                             // 立即重启按钮
                             Button(
                                 onClick = {
-                                    // 重启应用（通过 Intent 清除任务栈，不使用 Runtime.exit
-                                    // 以避免中断进行中的数据库写入和蓝牙操作）
+                                    // 重启前先优雅断开蓝牙（让 Split 模式关闭命令
+                                    // 完整发完，否则 finishAffinity 打断之后电台
+                                    // 会停在 Split 状态，下次连接体验变差）。
                                     val activity = context as? Activity
-                                    activity?.let {
-                                        val intent = Intent(it, SplashActivity::class.java)
-                                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
-                                        it.startActivity(intent)
-                                        it.finishAffinity()
+                                    scope.launch {
+                                        try {
+                                            com.bh6aap.ic705Cter.data.radio.BluetoothConnectionManager
+                                                .getInstance().disconnect()
+                                        } catch (_: Exception) {
+                                        }
+                                        // 重启应用（通过 Intent 清除任务栈，不使用 Runtime.exit
+                                        // 以避免中断进行中的数据库写入）
+                                        activity?.let {
+                                            val intent = Intent(it, SplashActivity::class.java)
+                                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                                            it.startActivity(intent)
+                                            it.finishAffinity()
+                                        }
                                     }
                                 },
                                 modifier = Modifier.fillMaxWidth(),

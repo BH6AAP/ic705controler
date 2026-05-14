@@ -137,17 +137,32 @@ fun BluetoothDeviceDialog(
                             )
                         }
                     } else if (devices.isEmpty()) {
-                        Box(
+                        Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(100.dp),
-                            contentAlignment = Alignment.Center
+                                .height(120.dp),
+                            verticalArrangement = Arrangement.Center,
+                            horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Text(
                                 text = stringResource(R.string.bluetooth_no_paired_devices),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
+                            // 无配对设备时，列表本身没有任何下一步可走的入口
+                            // (项目从不调 startDiscovery)。把"去系统蓝牙设置"
+                            // 抬到主流程里，让用户在那里完成配对再回来。
+                            Spacer(modifier = Modifier.height(8.dp))
+                            OutlinedButton(
+                                onClick = {
+                                    context.startActivity(
+                                        android.content.Intent(android.provider.Settings.ACTION_BLUETOOTH_SETTINGS)
+                                            .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                                    )
+                                }
+                            ) {
+                                Text(stringResource(R.string.bluetooth_open_system_settings))
+                            }
                         }
                     } else {
                         LazyColumn(

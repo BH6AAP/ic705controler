@@ -80,10 +80,14 @@ object SatellitePassCalculator {
                 return@withContext emptyList()
             }
 
-            // 获取NTP校准后的时间作为起始时间
+            // 获取NTP校准后的时间作为起始时间。
+            // 之前用 getAccurateTime() 每次都发 UDP，单卫星路径在无缓存下
+            // 会阻塞 ~5s（超时），且每次刷新的时间基准还可能抖动，进而影响
+            // cachedPasses 的区间命中判断。多卫星路径早就改成了缓存版本，
+            // 这里保持一致。
             val ntpManager = NtpTimeManager(context)
-            val accurateTime = ntpManager.getAccurateTime()
-            LogManager.i("SatellitePassCalculator", "使用NTP时间: ${Date(accurateTime)}")
+            val accurateTime = ntpManager.getCachedAccurateTime()
+            LogManager.i("SatellitePassCalculator", "使用NTP时间(缓存): ${Date(accurateTime)}")
 
             // 检查缓存
             val dbHelper = DatabaseHelper.getInstance(context)

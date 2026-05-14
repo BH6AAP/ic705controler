@@ -45,7 +45,10 @@ class TleDataManager(private val context: Context) {
             return@withContext true
         }
 
-        val lastSync = dbHelper.getLastSyncRecord("tle_satnogs")
+        // 写入路径用 "tle_celestrak" (见 fetchTleData)，这里必须读同一个 key；
+        // 历史上曾用过 "tle_satnogs"，保留兜底以兼容老数据。
+        val lastSync = dbHelper.getLastSyncRecord("tle_celestrak")
+            ?: dbHelper.getLastSyncRecord("tle_satnogs")
         if (lastSync == null) {
             return@withContext true
         }
@@ -69,6 +72,9 @@ class TleDataManager(private val context: Context) {
             }
 
             val allSatellites = mutableListOf<SatelliteEntity>()
+            // 记录数据真正来自哪条路径（用于 sync_records.source）。
+            // 之前不论实际 source 都写 SATNOGS，导致排查同步问题时被误导。
+            var actualSource: String = CELESTRAK_TLE_URL
 
             // 首先尝试从 Celestrak 获取 TLE 数据（纯文本格式）
             try {
@@ -127,6 +133,7 @@ class TleDataManager(private val context: Context) {
 
                         val satellites = parseTleData(responseBody)
                         allSatellites.addAll(satellites)
+                        actualSource = apiUrl
                         android.util.Log.i("TleDataManager", "从 SatNOGS 获取了 ${satellites.size} 颗卫星")
                     }
                 } catch (e2: kotlinx.coroutines.CancellationException) {
@@ -150,7 +157,7 @@ class TleDataManager(private val context: Context) {
                     syncType = "tle_celestrak",
                     syncTime = System.currentTimeMillis(),
                     recordCount = allSatellites.size,
-                    source = SATNOGS_API_BASE_URL
+                    source = actualSource
                 )
                 dbHelper.insertSyncRecord(syncRecord)
             }

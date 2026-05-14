@@ -297,6 +297,30 @@ fun ApiSettingsDialog(
                                 isTesting = true
                                 testResult = TestResult(isSuccess = true, message = context.getString(R.string.api_saving), details = null)
 
+                                // 保存前先对三个 URL 都跑 SSRF/形式校验，
+                                // 拒绝非 https / 指向内网的 URL。之前只在
+                                // fetch 路径里校验，坏 URL 会先被持久化，
+                                // 下次冷启动又拉一次才暴露问题。
+                                val urlsToCheck = listOfNotNull(
+                                    satelliteApiUrl.trim().takeIf { it.isNotBlank() },
+                                    transmitterApiUrl.trim().takeIf { it.isNotBlank() },
+                                    tleApiUrl.trim().takeIf { it.isNotBlank() }
+                                )
+                                val invalidReason = urlsToCheck
+                                    .map { it to com.bh6aap.ic705Cter.data.api.SecureHttp.validateOutboundUrl(it) }
+                                    .firstOrNull { (_, r) -> r is com.bh6aap.ic705Cter.data.api.SecureHttp.UrlCheck.Reject }
+                                if (invalidReason != null) {
+                                    val (url, r) = invalidReason
+                                    val reason = (r as com.bh6aap.ic705Cter.data.api.SecureHttp.UrlCheck.Reject).reason
+                                    testResult = TestResult(
+                                        isSuccess = false,
+                                        message = context.getString(R.string.api_save_failed),
+                                        details = "$url → $reason"
+                                    )
+                                    isTesting = false
+                                    return@launch
+                                }
+
                                 // 保存API设置
                                 prefs.saveApiUrls(
                                     satelliteApiUrl = satelliteApiUrl.trim(),
@@ -423,10 +447,25 @@ suspend fun fetchCustomTleData(context: Context, url: String): Boolean {
             val satellites = parseTleTextData(body)
 
             if (satellites.isNotEmpty()) {
-                // 保存到自定义数据库
+                // 保存到自定义数据库（保持原有 custom DB 行为）以及默认数据库。
+                // 之前只写 custom DB，但 SatellitePassCalculator / Tracking
+                // 直接读默认 DB（DatabaseHelper），自定义 URL 配了实际等于
+                // 没配。这里双写让消费方不必走 DatabaseRouter 也能拿到数据。
+                // 默认 DB 用 replaceAllSatellites 以原子事务替换，避免
+                // delete-then-insert 中间进程挂掉留下空库。
                 val customDbManager = CustomApiDatabaseManager.getInstance(context)
                 customDbManager.saveSatellites(satellites)
-                LogManager.i("ApiSettings", "成功保存 ${satellites.size} 颗卫星到自定义数据库")
+                val defaultDb = com.bh6aap.ic705Cter.data.database.DatabaseHelper.getInstance(context)
+                defaultDb.replaceAllSatellites(satellites)
+                defaultDb.insertSyncRecord(
+                    com.bh6aap.ic705Cter.data.database.entity.SyncRecordEntity(
+                        syncType = "tle_celestrak",
+                        syncTime = System.currentTimeMillis(),
+                        recordCount = satellites.size,
+                        source = url
+                    )
+                )
+                LogManager.i("ApiSettings", "成功保存 ${satellites.size} 颗卫星到自定义+默认数据库")
                 return true
             } else {
                 LogManager.w("ApiSettings", "未解析到任何卫星数据")

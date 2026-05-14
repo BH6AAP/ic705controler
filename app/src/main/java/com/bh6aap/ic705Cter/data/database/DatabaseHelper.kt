@@ -475,6 +475,28 @@ class DatabaseHelper private constructor(context: Context) : SQLiteOpenHelper(
         writableDatabase.delete(TABLE_SATELLITES, null, null)
     }
 
+    /**
+     * 原子替换 satellites 表：delete 和 insert 在同一个事务里，避免
+     * 中间进程死亡 / 异常留下空库。
+     */
+    suspend fun replaceAllSatellites(satellites: List<SatelliteEntity>) = withContext(Dispatchers.IO) {
+        writableDatabase.beginTransaction()
+        try {
+            writableDatabase.delete(TABLE_SATELLITES, null, null)
+            satellites.forEach { satellite ->
+                writableDatabase.insertWithOnConflict(
+                    TABLE_SATELLITES,
+                    null,
+                    satellite.toContentValues(),
+                    SQLiteDatabase.CONFLICT_REPLACE
+                )
+            }
+            writableDatabase.setTransactionSuccessful()
+        } finally {
+            writableDatabase.endTransaction()
+        }
+    }
+
     suspend fun getSatelliteCount(): Int = withContext(Dispatchers.IO) {
         readableDatabase.rawQuery("SELECT COUNT(*) FROM $TABLE_SATELLITES", null).use { cursor ->
             if (cursor.moveToFirst()) cursor.getInt(0) else 0

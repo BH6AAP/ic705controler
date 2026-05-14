@@ -21,6 +21,16 @@ class BluetoothConnectionManager private constructor() {
     companion object {
         private const val TAG = "BluetoothConnectionManager"
 
+        // 心跳参数，见 startHeartbeat 调用点的解释。Android 的
+        // BluetoothSocket.isConnected() 在远端静默掉电时仍可能返回 true，
+        // 靠主动轻量 CI-V 查询来识别"僵尸连接"并强制清理。
+        // 间隔 60s：tracking 的 500ms 频率更新占用 SPP 队列时，心跳
+        // 3s 查询可能超时；30s 间隔 + 2 次阈值 = 最短 63s 就会误判，
+        // 拉到 60s + 2 次 = 最短 123s，给忙期更多容忍。
+        private const val HEARTBEAT_INTERVAL_MS = 60_000L
+        private const val HEARTBEAT_FAIL_THRESHOLD = 2
+        private const val HEARTBEAT_QUERY_TIMEOUT_MS = 3_000L
+
         // Volatile ensures the JVM memory model guarantees visibility of the write
         // across all threads; double-checked locking removes the lock overhead on
         // the hot path after initialisation.
@@ -66,10 +76,26 @@ class BluetoothConnectionManager private constructor() {
     // VFO状态跟踪
     var currentVfo = "A"
 
+    // Split 模式当前状态（null=未知/未连接, true=ON, false=OFF）。
+    // UI 订阅此 StateFlow 显示开关并反映"手动切 Split"的即时结果。
+    private val _splitMode = MutableStateFlow<Boolean?>(null)
+    val splitMode: StateFlow<Boolean?> = _splitMode.asStateFlow()
+
+    // CI-V 命令失败 / 超时事件，供 Activity 订阅做 Toast / Snackbar。直接
+    // 暴露 CivController 的 SharedFlow 是 null-unsafe 的（重连后引用变化），
+    // 走这一层 wrapper 让订阅方统一对接 BluetoothConnectionManager。
+    private val _commandEvents = kotlinx.coroutines.flow.MutableSharedFlow<CivController.CivCommandEvent>(
+        replay = 0,
+        extraBufferCapacity = 16
+    )
+    val commandEvents: kotlinx.coroutines.flow.SharedFlow<CivController.CivCommandEvent> = _commandEvents
+
     // startStateSync 的 collector Job；重连时必须取消旧的，避免多个
     // collector 并发写 _vfoAFrequency 等 StateFlow。
     @Volatile
     private var stateSyncJob: Job? = null
+    @Volatile
+    private var heartbeatJob: Job? = null
 
     /**
      * 连接到蓝牙设备
@@ -132,6 +158,13 @@ class BluetoothConnectionManager private constructor() {
                     delay(500) // 等待连接稳定
                     ensureSplitModeEnabled()
                 }
+
+                // 启动心跳：BluetoothSppConnector 自带的 isConnected 在远端
+                // 静默掉电 / 超出范围时仍可能返回 true（Android 已知问题），
+                // 让"连接灯"长时间撒谎。这里每 HEARTBEAT_INTERVAL_MS 主动
+                // 跑一次轻量 CI-V 查询；连续 HEARTBEAT_FAIL_THRESHOLD 次失
+                // 败才强制 cleanupConnection，避免对偶尔的瞬时丢包过敏。
+                startHeartbeat(civController)
             } else {
                 LogManager.e(TAG, "【蓝牙连接】连接失败")
                 _civController.value = null
@@ -152,6 +185,14 @@ class BluetoothConnectionManager private constructor() {
     private fun startStateSync(civController: CivController) {
         stateSyncJob?.cancel()
         stateSyncJob = coroutineScope.launch {
+            // 一并把 CivController 的 commandEvents 桥接到本管理器；下游 UI
+            // 订阅 BluetoothConnectionManager.commandEvents 即可，不需要关
+            // 心 CivController 实例什么时候被换。
+            launch {
+                civController.commandEvents.collect { event ->
+                    _commandEvents.tryEmit(event)
+                }
+            }
             kotlinx.coroutines.flow.combine(
                 civController.vfoAFrequency,
                 civController.vfoAMode,
@@ -163,6 +204,42 @@ class BluetoothConnectionManager private constructor() {
                 if (_vfoBFrequency.value != vfoBFreq) _vfoBFrequency.value = vfoBFreq
                 if (_vfoBMode.value != vfoBMode) _vfoBMode.value = vfoBMode
             }.collect { }
+        }
+    }
+
+    private fun startHeartbeat(civController: CivController) {
+        heartbeatJob?.cancel()
+        heartbeatJob = coroutineScope.launch {
+            var consecutiveFails = 0
+            while (true) {
+                delay(HEARTBEAT_INTERVAL_MS)
+                // 还是当前连接器吗？collector 可能在重连后被换掉
+                if (_civController.value !== civController) return@launch
+
+                val ok = try {
+                    kotlinx.coroutines.withTimeoutOrNull(HEARTBEAT_QUERY_TIMEOUT_MS) {
+                        civController.getCurrentVfoFrequency() > 0
+                    } ?: false
+                } catch (e: Exception) {
+                    LogManager.w(TAG, "【蓝牙连接】心跳查询异常: ${e.message}")
+                    false
+                }
+
+                if (ok) {
+                    consecutiveFails = 0
+                } else {
+                    consecutiveFails++
+                    LogManager.w(TAG, "【蓝牙连接】心跳失败 ($consecutiveFails / $HEARTBEAT_FAIL_THRESHOLD)")
+                    if (consecutiveFails >= HEARTBEAT_FAIL_THRESHOLD) {
+                        LogManager.e(TAG, "【蓝牙连接】心跳连续失败，强制断开")
+                        // 主动 disconnect 比直接 cleanupConnection 更彻底：会
+                        // 试图关 Split + 关 socket，再走回 connector 回调清理。
+                        try { _currentConnector.value?.disconnect() } catch (_: Exception) {}
+                        cleanupConnection()
+                        return@launch
+                    }
+                }
+            }
         }
     }
 
@@ -222,6 +299,8 @@ class BluetoothConnectionManager private constructor() {
         // 取消 state-sync collector，防止后续累积
         stateSyncJob?.cancel()
         stateSyncJob = null
+        heartbeatJob?.cancel()
+        heartbeatJob = null
 
         // 清理连接器引用
         _currentConnector.value = null
@@ -232,6 +311,8 @@ class BluetoothConnectionManager private constructor() {
         _vfoAMode.value = "-"
         _vfoBFrequency.value = "-"
         _vfoBMode.value = "-"
+        // Split 状态也必须回到未知，否则断线后 UI 还显示上一连接的开/关
+        _splitMode.value = null
 
         LogManager.i(TAG, "【蓝牙连接】资源清理完成")
     }
@@ -252,7 +333,9 @@ class BluetoothConnectionManager private constructor() {
      * @return 是否操作成功
      */
     suspend fun setSplitMode(enable: Boolean): Boolean {
-        return _civController.value?.setSplitMode(enable) ?: false
+        val ok = _civController.value?.setSplitMode(enable) ?: false
+        if (ok) _splitMode.value = enable
+        return ok
     }
 
     /**
@@ -260,7 +343,9 @@ class BluetoothConnectionManager private constructor() {
      * @return true=Split ON, false=Split OFF, null=读取失败
      */
     suspend fun readSplitMode(): Boolean? {
-        return _civController.value?.readSplitMode()
+        val s = _civController.value?.readSplitMode()
+        if (s != null) _splitMode.value = s
+        return s
     }
 
     /**

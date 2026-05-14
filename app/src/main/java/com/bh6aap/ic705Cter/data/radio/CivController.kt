@@ -56,6 +56,7 @@ class CivController(private val sppConnector: BluetoothSppConnector) {
         const val MODE_FM: Byte = 0x05
         const val MODE_CW_R: Byte = 0x07
         const val MODE_RTTY_R: Byte = 0x08
+        const val MODE_DV: Byte = 0x17
 
         /**
          * IC-705 合规可发射频段（Hz, 闭区间）
@@ -101,6 +102,34 @@ class CivController(private val sppConnector: BluetoothSppConnector) {
 
     // 响应监听器（用于外部处理CIV响应，如PTT状态管理器）
     private var responseListener: ((ByteArray) -> Unit)? = null
+
+    /**
+     * 命令结果事件流，让 UI 能感知"频率/模式被电台拒绝"或"超时"。
+     * 之前所有失败只写日志，UI 上的频率显示已经更新但电台未收到。
+     */
+    private val _commandEvents = kotlinx.coroutines.flow.MutableSharedFlow<CivCommandEvent>(
+        replay = 0,
+        extraBufferCapacity = 16
+    )
+    val commandEvents: kotlinx.coroutines.flow.SharedFlow<CivCommandEvent> = _commandEvents
+
+    /**
+     * 一条 CI-V 命令的最终结果。Reason 是 UI 展示用的中文摘要。
+     */
+    sealed class CivCommandEvent(val description: String) {
+        class FrequencyOutOfRange(val freqHz: Long) : CivCommandEvent(
+            "频率 ${freqHz / 1_000_000.0} MHz 超出 IC-705 合规发射范围"
+        )
+        class FrequencyHardwareInvalid(val freqHz: Long) : CivCommandEvent(
+            "频率 $freqHz Hz 超出硬件可发射范围"
+        )
+        class ModeUnknown(val modeStr: String) : CivCommandEvent(
+            "无法识别的模式: $modeStr"
+        )
+        object Timeout : CivCommandEvent("电台未在超时内响应，可能链接已掉线")
+        object Nack : CivCommandEvent("电台拒绝命令 (NACK)")
+        object SendFailed : CivCommandEvent("命令发送失败 (蓝牙写入错误)")
+    }
 
     /**
      * 设置响应监听器
@@ -206,6 +235,7 @@ class CivController(private val sppConnector: BluetoothSppConnector) {
                 LogManager.e(TAG, "【CIV】发送指令失败")
                 pendingResponse = null
                 pendingCommandCode = null
+                _commandEvents.tryEmit(CivCommandEvent.SendFailed)
                 return null
             }
 
@@ -219,7 +249,15 @@ class CivController(private val sppConnector: BluetoothSppConnector) {
 
             if (response == null) {
                 LogManager.e(TAG, "【CIV】等待响应超时")
+                _commandEvents.tryEmit(CivCommandEvent.Timeout)
                 return null
+            }
+
+            // 0xFA 是电台对命令的显式失败应答；到这里说明 sendCommand... 的
+            // 上层 (callProcedure) 需要知道这不是成功响应。这里多 emit 一次
+            // 让 UI 立即看见，而不必等 callProcedure 再通知。
+            if (response.size >= 5 && response[4] == 0xFA.toByte()) {
+                _commandEvents.tryEmit(CivCommandEvent.Nack)
             }
 
             LogManager.i(TAG, "【CIV】收到响应")
@@ -290,12 +328,14 @@ class CivController(private val sppConnector: BluetoothSppConnector) {
         // 硬件硬限：<=0 或 >10 GHz 直接拒绝（防 NaN/Infinity 转 Long 溢出和伪 BCD 帧污染）
         if (frequencyHz <= 0L || frequencyHz > 10_000_000_000L) {
             LogManager.e(TAG, "【CIV】频率超出硬件范围 ($frequencyHz Hz)，拒绝发送到电台")
+            _commandEvents.tryEmit(CivCommandEvent.FrequencyHardwareInvalid(frequencyHz))
             return false
         }
         // IC-705 可发射频段白名单（业余频段 + 0.03-30 MHz 整个 HF 通段）
         // 注: 此处为保守合规护栏，不替代操作员对本地法规的责任。
         if (!isAllowedFrequency(frequencyHz)) {
             LogManager.e(TAG, "【CIV】频率 ${frequencyHz / 1_000_000.0} MHz 不在 IC-705 合规频段，拒绝发送")
+            _commandEvents.tryEmit(CivCommandEvent.FrequencyOutOfRange(frequencyHz))
             return false
         }
         LogManager.i(TAG, "【CIV】设置 $vfoName 频率: ${frequencyHz / 1000000.0} MHz")
@@ -387,14 +427,17 @@ class CivController(private val sppConnector: BluetoothSppConnector) {
      * 设置指定VFO的模式
      * 参考 Look4Sat: setMode(Main: Boolean, mode: String)
      * 命令: 0x26, 子命令: 0x00=VFO A, 0x01=VFO B
-     * 数据: [模式码, 滤波器, 数据模式]
+     * 载荷格式: [mode, dataMode, filter]，与 setDataMode 使用的 [mode, data, filter]
+     * 完全一致。注意历史上这里的顺序写反过，会把非法值写进 Data 字节。
+     *
+     * 默认值 dataMode=0x00 (OFF)，filter=0x01 (FIL1)。
      */
-    suspend fun setVfoMode(vfo: Byte, mode: Byte, filter: Byte = 0x00, dataMode: Byte = 0x01): Boolean {
+    suspend fun setVfoMode(vfo: Byte, mode: Byte, dataMode: Byte = 0x00, filter: Byte = 0x01): Boolean {
         val vfoName = if (vfo == VFO_A) "VFO A" else "VFO B"
         val modeName = getModeName(mode)
         LogManager.i(TAG, "【CIV】设置 $vfoName 模式: $modeName")
 
-        val modeData = byteArrayOf(mode, filter, dataMode)
+        val modeData = byteArrayOf(mode, dataMode, filter)
         return callProcedure(CMD_SET_MODE, vfo, modeData)
     }
 
@@ -430,7 +473,14 @@ class CivController(private val sppConnector: BluetoothSppConnector) {
             "FM" -> MODE_FM
             "CW-R" -> MODE_CW_R
             "RTTY-R" -> MODE_RTTY_R
-            else -> MODE_USB
+            "DV", "DSTAR", "D-STAR" -> MODE_DV
+            else -> {
+                // 未识别的模式不应静默降级为 USB：卫星 DV 转发器一旦被
+                // 当作 USB 发射会严重偏频，调用方应把失败冒泡给用户。
+                LogManager.e(TAG, "【CIV】未识别的模式: $modeStr，拒绝下发")
+                _commandEvents.tryEmit(CivCommandEvent.ModeUnknown(modeStr))
+                return false
+            }
         }
 
         // 先设置基本模式

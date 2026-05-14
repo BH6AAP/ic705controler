@@ -142,12 +142,16 @@ class SatelliteTracker private constructor(private val context: Context) {
      * @param currentTime 当前时间
      * @param targetSatelliteId 目标卫星ID（可选），如果指定则只有该卫星会更新多普勒缓存
      * @param downlinkFreqHz 下行频率（Hz），用于计算多普勒频移，默认435MHz
+     * @param updateCache 是否允许写入 DopplerDataCache。调用方同时有后台跟踪
+     *                    循环在写 cache 时应传 false，避免历史窗口被双倍样本
+     *                    污染导致预测斜率失真。
      */
     suspend fun calculateSatellitePosition(
         satellite: SatelliteEntity,
         currentTime: Long = System.currentTimeMillis(),
         targetSatelliteId: String? = null,
-        downlinkFreqHz: Double = 435e6
+        downlinkFreqHz: Double = 435e6,
+        updateCache: Boolean = true
     ): SatellitePosition? = withContext(Dispatchers.IO) {
         try {
             val frame = topocentricFrame ?: return@withContext null
@@ -183,8 +187,8 @@ class SatelliteTracker private constructor(private val context: Context) {
                 state.date
             )
 
-            // 只有目标卫星才更新多普勒缓存
-            if (targetSatelliteId == null || satellite.noradId == targetSatelliteId) {
+            // 只有目标卫星才更新多普勒缓存，且调用方允许写入时才写
+            if (updateCache && (targetSatelliteId == null || satellite.noradId == targetSatelliteId)) {
                 // 计算多普勒频移：Δf = -f * v_r / c
                 val dopplerShiftHz = -downlinkFreqHz * rangeRate / 299792458.0
                 DopplerDataCache.updateData(
@@ -223,10 +227,11 @@ class SatelliteTracker private constructor(private val context: Context) {
         satellites: List<SatelliteEntity>,
         currentTime: Long = System.currentTimeMillis(),
         targetSatelliteId: String? = null,
-        downlinkFreqHz: Double = 435e6
+        downlinkFreqHz: Double = 435e6,
+        updateCache: Boolean = true
     ): List<SatellitePosition> = withContext(Dispatchers.IO) {
         satellites.mapNotNull { satellite ->
-            calculateSatellitePosition(satellite, currentTime, targetSatelliteId, downlinkFreqHz)
+            calculateSatellitePosition(satellite, currentTime, targetSatelliteId, downlinkFreqHz, updateCache)
         }.filter { it.isVisible } // 只返回可见的卫星
     }
 

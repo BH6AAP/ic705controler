@@ -2,6 +2,7 @@ package com.bh6aap.ic705Cter.data.api
 
 import android.content.Context
 import com.bh6aap.ic705Cter.data.database.DatabaseHelper
+import com.bh6aap.ic705Cter.data.database.entity.SyncRecordEntity
 import com.bh6aap.ic705Cter.util.LogManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -103,14 +104,25 @@ class TransmitterDataManager(private val context: Context) {
                 }
                 
                 LogManager.i("TransmitterDataManager", "成功下载 ${allTransmitters.size} 个转发器数据")
-                
+
                 // 清空旧数据并插入新数据
                 database.deleteAllTransmitters()
                 database.insertTransmitters(allTransmitters)
-                
+
                 // 保存更新时间
                 saveLastUpdateTime()
-                
+                // 同时写 sync_records，让 onUpgrade 清掉 transmitters 表时
+                // "最近更新时间" 和行数能一致被重置，避免 UI 显示 5/12 但
+                // 表里 0 行。
+                database.insertSyncRecord(
+                    SyncRecordEntity(
+                        syncType = "transmitters_satnogs",
+                        syncTime = System.currentTimeMillis(),
+                        recordCount = allTransmitters.size,
+                        source = baseApiUrl
+                    )
+                )
+
                 LogManager.i("TransmitterDataManager", "转发器数据更新完成")
                 return@withContext true
 
@@ -156,8 +168,14 @@ class TransmitterDataManager(private val context: Context) {
      */
     suspend fun getLastUpdateTime(): String {
         return withContext(Dispatchers.IO) {
-            val prefs = context.getSharedPreferences("transmitter_prefs", Context.MODE_PRIVATE)
-            val timestamp = prefs.getLong("last_update_time", 0)
+            // 首选 sync_records：它和 transmitters 表生命周期一致（onUpgrade
+            // 若 DROP transmitters 也会 DROP sync_records），所以 UI 不会
+            // 出现"有时间戳但 0 行"的假象。
+            val record = database.getLastSyncRecord("transmitters_satnogs")
+            val timestamp = record?.syncTime ?: run {
+                val prefs = context.getSharedPreferences("transmitter_prefs", Context.MODE_PRIVATE)
+                prefs.getLong("last_update_time", 0)
+            }
             if (timestamp == 0L) {
                 "从未更新"
             } else {

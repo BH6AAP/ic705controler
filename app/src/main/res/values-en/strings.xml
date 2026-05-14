@@ -245,6 +245,7 @@
     <string name="bluetooth_device_done">Done</string>
     <string name="bluetooth_permission_required">Bluetooth permission required</string>
     <string name="bluetooth_no_paired_devices">No paired Bluetooth devices</string>
+    <string name="bluetooth_open_system_settings">Open system Bluetooth settings</string>
     <string name="bluetooth_device_unknown">Unknown Device</string>
     <string name="bluetooth_device_default_label">Default</string>
     <string name="bluetooth_device_icom_label">ICOM</string>
