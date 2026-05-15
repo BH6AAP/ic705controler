@@ -8,15 +8,19 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
 import com.bh6aap.ic705Cter.ui.components.LanguageIcon
+import com.bh6aap.ic705Cter.ui.components.UpdateCheckDialog
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -91,6 +95,7 @@ private fun SettingsScreen(
     var showStationDialog by remember { mutableStateOf(false) }
     var showApiSettingsDialog by remember { mutableStateOf(false) }
     var showLanguageDialog by remember { mutableStateOf(false) }
+    var showUpdateDialog by remember { mutableStateOf(false) }
     var needRefreshStation by remember { mutableStateOf(false) }
 
     Scaffold(
@@ -128,7 +133,8 @@ private fun SettingsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(16.dp),
+                .padding(16.dp)
+                .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             // 设置项列表
@@ -204,7 +210,17 @@ private fun SettingsScreen(
                 }
             )
 
-            Spacer(modifier = Modifier.weight(1f))
+            // 检查更新入口
+            SettingsItem(
+                title = stringResource(R.string.settings_check_update),
+                description = stringResource(R.string.settings_check_update_desc),
+                icon = Icons.Default.Refresh,
+                onClick = {
+                    showUpdateDialog = true
+                }
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
 
             // 底部设计者信息
             Box(
@@ -275,6 +291,13 @@ private fun SettingsScreen(
     if (showLanguageDialog) {
         LanguageSettingsDialog(
             onDismiss = { showLanguageDialog = false }
+        )
+    }
+
+    // 检查更新对话框
+    if (showUpdateDialog) {
+        UpdateCheckDialog(
+            onDismiss = { showUpdateDialog = false }
         )
     }
 }

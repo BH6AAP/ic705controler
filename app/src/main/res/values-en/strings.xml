@@ -454,4 +454,19 @@
     <string name="error_gps_disabled">Location service is disabled</string>
     <string name="error_satellite_not_found">Satellite data not found</string>
     <string name="error_transmitter_not_found">Transmitter data not found</string>
+
+    <!-- Check for Updates -->
+    <string name="settings_check_update">Check for Updates</string>
+    <string name="settings_check_update_desc">Check if a new version is available</string>
+    <string name="update_check_title">Check for Updates</string>
+    <string name="update_checking">Checking for updates…</string>
+    <string name="update_latest">Up to Date</string>
+    <string name="update_current_version">Current version v%1$s</string>
+    <string name="update_available">New Version Available</string>
+    <string name="update_version_info">Current: v%1$s → Latest: v%2$s</string>
+    <string name="update_changelog">Changelog</string>
+    <string name="update_download">Download</string>
+    <string name="update_error">Check Failed</string>
+    <string name="update_retry">Retry</string>
+    <string name="update_download_source">Download Source</string>
 </resources>

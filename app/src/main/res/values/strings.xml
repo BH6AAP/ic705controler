@@ -454,4 +454,19 @@
     <string name="error_gps_disabled">定位服务未开启</string>
     <string name="error_satellite_not_found">未找到卫星数据</string>
     <string name="error_transmitter_not_found">未找到转发器数据</string>
+
+    <!-- 检查更新 -->
+    <string name="settings_check_update">检查更新</string>
+    <string name="settings_check_update_desc">检查是否有新版本可用</string>
+    <string name="update_check_title">检查更新</string>
+    <string name="update_checking">正在检查更新…</string>
+    <string name="update_latest">已是最新版本</string>
+    <string name="update_current_version">当前版本 v%1$s</string>
+    <string name="update_available">发现新版本</string>
+    <string name="update_version_info">当前: v%1$s → 最新: v%2$s</string>
+    <string name="update_changelog">更新内容</string>
+    <string name="update_download">前往下载</string>
+    <string name="update_error">检查失败</string>
+    <string name="update_retry">重试</string>
+    <string name="update_download_source">下载方式</string>
 </resources>
